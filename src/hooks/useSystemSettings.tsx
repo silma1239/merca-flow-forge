@@ -56,13 +56,24 @@ export function useSystemSettings() {
       const warningColorConfig = data?.find(s => s.setting_key === 'CHECKOUT_WARNING_COLOR');
 
       if (primaryColorConfig || secondaryColorConfig || accentColorConfig || successColorConfig || warningColorConfig) {
-        setCheckoutColors({
+        const newColors = {
           primary: primaryColorConfig?.setting_value || '#3b82f6',
           secondary: secondaryColorConfig?.setting_value || '#f1f5f9',
           accent: accentColorConfig?.setting_value || '#06b6d4',
           success: successColorConfig?.setting_value || '#16a34a',
           warning: warningColorConfig?.setting_value || '#d97706'
-        });
+        };
+        setCheckoutColors(newColors);
+        
+        // Apply colors immediately to CSS when loaded
+        if (typeof window !== 'undefined') {
+          const root = document.documentElement;
+          root.style.setProperty('--checkout-primary', newColors.primary);
+          root.style.setProperty('--checkout-secondary', newColors.secondary);
+          root.style.setProperty('--checkout-accent', newColors.accent);
+          root.style.setProperty('--checkout-success', newColors.success);
+          root.style.setProperty('--checkout-warning', newColors.warning);
+        }
       }
 
       const metaPixelConfig = data?.find(s => s.setting_key === 'META_PIXEL_ID');
@@ -91,6 +102,15 @@ export function useSystemSettings() {
 
   const updateCheckoutColors = (colors: typeof checkoutColors) => {
     setCheckoutColors(colors);
+    // Apply colors immediately to CSS
+    if (typeof window !== 'undefined' && colors) {
+      const root = document.documentElement;
+      root.style.setProperty('--checkout-primary', colors.primary);
+      root.style.setProperty('--checkout-secondary', colors.secondary);
+      root.style.setProperty('--checkout-accent', colors.accent);
+      root.style.setProperty('--checkout-success', colors.success);
+      root.style.setProperty('--checkout-warning', colors.warning);
+    }
   };
 
   const updateMetaPixelId = (pixelId: string) => {

@@ -74,6 +74,13 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
+				},
+				checkout: {
+					primary: 'var(--checkout-primary)',
+					secondary: 'var(--checkout-secondary)',
+					accent: 'var(--checkout-accent)',
+					success: 'var(--checkout-success)',
+					warning: 'var(--checkout-warning)'
 				}
 			},
 			borderRadius: {

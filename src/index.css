@@ -46,6 +46,13 @@ All colors MUST be HSL.
     --warning-foreground: 0 0% 100%;
     --warning-light: 45 93% 90%;
 
+    /* Dynamic Checkout Colors - Can be overridden by JavaScript */
+    --checkout-primary: var(--primary);
+    --checkout-secondary: var(--secondary);
+    --checkout-accent: var(--accent);
+    --checkout-success: var(--success);
+    --checkout-warning: var(--warning);
+
     /* Payment method specific colors */
     --pix: 220 91% 56%;
     --credit-card: 280 100% 70%;

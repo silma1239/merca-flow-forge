@@ -64,6 +64,18 @@ export default function CheckoutPage() {
   const { toast } = useToast();
   const { metaPixelId, checkoutColors } = useSystemSettings();
 
+  // Apply dynamic colors to CSS variables
+  useEffect(() => {
+    if (checkoutColors) {
+      const root = document.documentElement;
+      root.style.setProperty('--checkout-primary', checkoutColors.primary);
+      root.style.setProperty('--checkout-secondary', checkoutColors.secondary);
+      root.style.setProperty('--checkout-accent', checkoutColors.accent);
+      root.style.setProperty('--checkout-success', checkoutColors.success);
+      root.style.setProperty('--checkout-warning', checkoutColors.warning);
+    }
+  }, [checkoutColors]);
+
   // Real-time payment status monitoring
   useEffect(() => {
     if (!paymentResult?.orderId) return;
@@ -561,7 +573,7 @@ export default function CheckoutPage() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             {/* Product Information */}
             <div className="space-y-6">
-              <Card className="border-2 border-primary/20 shadow-lg">
+              <Card className="border-2 shadow-lg" style={{ borderColor: checkoutColors.primary + '33' }}>
                 <CardHeader className="text-center">
                   <CardTitle className="text-2xl font-bold">{product.name}</CardTitle>
                   {(product.uploaded_image_url || product.image_url) && (
@@ -575,10 +587,10 @@ export default function CheckoutPage() {
                 <CardContent>
                   <p className="text-muted-foreground mb-4">{product.description}</p>
                   <div className="text-center">
-                    <div className="text-3xl font-bold text-primary">R$ {product.price.toFixed(2)}</div>
+                    <div className="text-3xl font-bold" style={{ color: checkoutColors.primary }}>R$ {product.price.toFixed(2)}</div>
                     <div className="flex items-center justify-center gap-1 mt-2">
                       {[1,2,3,4,5].map(i => (
-                        <Star key={i} className="h-4 w-4 fill-warning text-warning" />
+                        <Star key={i} className="h-4 w-4" style={{ fill: checkoutColors.warning, color: checkoutColors.warning }} />
                       ))}
                       <span className="text-sm text-muted-foreground ml-2">5.0 (2.431 avaliações)</span>
                     </div>
@@ -592,9 +604,13 @@ export default function CheckoutPage() {
                   key={bump.id}
                   className={`cursor-pointer transition-all duration-300 border-2 ${
                     selectedBumps.has(bump.id) 
-                      ? 'border-success bg-success/5 shadow-lg' 
-                      : 'border-border hover:border-primary/50'
+                      ? 'shadow-lg' 
+                      : 'border-border'
                   }`}
+                  style={{
+                    borderColor: selectedBumps.has(bump.id) ? checkoutColors.success : 'rgb(229 231 235)',
+                    backgroundColor: selectedBumps.has(bump.id) ? checkoutColors.success + '0D' : 'transparent'
+                  }}
                   onClick={() => toggleOrderBump(bump.id)}
                 >
                   <CardHeader className="pb-3">
