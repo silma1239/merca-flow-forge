@@ -233,7 +233,7 @@ export default function CheckoutPage() {
           settingsData.map(async (setting) => {
             const { data: productData } = await supabase
               .from('products')
-              .select('id, name, description, price, redirect_url')
+              .select('id, name, description, price, redirect_url, image_url, uploaded_image_url')
               .eq('id', setting.bump_product_id)
               .single();
             
@@ -249,7 +249,9 @@ export default function CheckoutPage() {
                 name: 'Produto não encontrado',
                 description: '',
                 price: 0,
-                redirect_url: ''
+                redirect_url: '',
+                image_url: null,
+                uploaded_image_url: null
               }
             };
           })
@@ -582,17 +584,34 @@ export default function CheckoutPage() {
                     </div>
                   </CardHeader>
                   <CardContent>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <span className="text-lg line-through text-muted-foreground">
-                          R$ {bump.product.price.toFixed(2)}
-                        </span>
-                        <span className="text-xl font-bold text-primary">
-                          R$ {(bump.product.price * (1 - bump.discount_percentage / 100)).toFixed(2)}
-                        </span>
-                        <Badge variant="secondary" className="bg-success/10 text-success">
-                          {bump.discount_percentage}% OFF
-                        </Badge>
+                    <div className="flex items-center gap-4">
+                      {/* Product Image */}
+                      {(bump.product.image_url || bump.product.uploaded_image_url) && (
+                        <div className="flex-shrink-0">
+                          <img 
+                            src={bump.product.uploaded_image_url || bump.product.image_url} 
+                            alt={bump.product.name}
+                            className="w-16 h-16 object-cover rounded-lg border"
+                          />
+                        </div>
+                      )}
+                      
+                      {/* Price Section */}
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-lg line-through text-muted-foreground">
+                            R$ {bump.product.price.toFixed(2)}
+                          </span>
+                          <span className="text-xl font-bold text-primary">
+                            R$ {(bump.product.price * (1 - bump.discount_percentage / 100)).toFixed(2)}
+                          </span>
+                          <Badge variant="secondary" className="bg-success/10 text-success">
+                            {bump.discount_percentage}% OFF
+                          </Badge>
+                        </div>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          {bump.product.name}
+                        </p>
                       </div>
                     </div>
                   </CardContent>

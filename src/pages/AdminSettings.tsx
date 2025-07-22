@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { Users, Settings, CreditCard, Key, ArrowLeft, Building, Package } from "lucide-react";
+import { Users, Settings, CreditCard, Key, ArrowLeft, Building, Package, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
 import { Textarea } from "@/components/ui/textarea";
@@ -491,6 +491,70 @@ export default function AdminSettings() {
     setLoading(false);
   };
 
+  const deleteSetting = async (id: string, table: 'admin_settings' | 'system_settings') => {
+    if (!window.confirm('Tem certeza que deseja excluir esta configuração?')) {
+      return;
+    }
+
+    setLoading(true);
+    
+    const { error } = await supabase
+      .from(table)
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      console.error('Erro ao excluir configuração:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao excluir configuração",
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Sucesso",
+        description: "Configuração excluída com sucesso",
+      });
+      if (table === 'admin_settings') {
+        await loadSettings();
+      } else {
+        await loadSystemSettings();
+      }
+    }
+    
+    setLoading(false);
+  };
+
+  const deleteOrderBump = async (id: string) => {
+    if (!window.confirm('Tem certeza que deseja excluir este order bump?')) {
+      return;
+    }
+
+    setLoading(true);
+    
+    const { error } = await supabase
+      .from('order_bump_settings')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      console.error('Erro ao excluir order bump:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao excluir order bump",
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Sucesso",
+        description: "Order bump excluído com sucesso",
+      });
+      await loadOrderBumps();
+    }
+    
+    setLoading(false);
+  };
+
   return (
     <div className="min-h-screen bg-background p-6">
       <div className="max-w-6xl mx-auto">
@@ -737,13 +801,22 @@ export default function AdminSettings() {
                             </div>
                           )}
                         </div>
-                        <Button
-                          size="sm"
-                          variant={bump.is_active ? "destructive" : "default"}
-                          onClick={() => toggleOrderBump(bump.id, bump.is_active)}
-                        >
-                          {bump.is_active ? 'Desativar' : 'Ativar'}
-                        </Button>
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            variant={bump.is_active ? "destructive" : "default"}
+                            onClick={() => toggleOrderBump(bump.id, bump.is_active)}
+                          >
+                            {bump.is_active ? 'Desativar' : 'Ativar'}
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={() => deleteOrderBump(bump.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -876,44 +949,65 @@ export default function AdminSettings() {
                          Nenhuma configuração encontrada
                        </div>
                      ) : (
-                       settings.map((setting) => (
-                         <div key={setting.id} className="flex items-center justify-between p-4 border rounded-lg mb-2">
-                           <div>
-                             <p className="font-medium">{setting.setting_key}</p>
-                             <p className="text-sm text-muted-foreground">
-                               Valor: {setting.setting_value ? '***' : 'Não configurado'}
-                             </p>
-                             <p className="text-xs text-muted-foreground">
-                               Atualizado em: {new Date(setting.updated_at).toLocaleDateString('pt-BR')}
-                             </p>
-                           </div>
-                           <Badge variant="outline">
-                             {setting.setting_value ? 'Configurado' : 'Não configurado'}
-                           </Badge>
-                         </div>
-                       ))
+                        settings.map((setting) => (
+                          <div key={setting.id} className="flex items-center justify-between p-4 border rounded-lg mb-2">
+                            <div>
+                              <p className="font-medium">{setting.setting_key}</p>
+                              <p className="text-sm text-muted-foreground">
+                                Valor: {setting.setting_value ? '***' : 'Não configurado'}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                Atualizado em: {new Date(setting.updated_at).toLocaleDateString('pt-BR')}
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Badge variant="outline">
+                                {setting.setting_value ? 'Configurado' : 'Não configurado'}
+                              </Badge>
+                              <Button
+                                size="sm"
+                                variant="destructive"
+                                onClick={() => deleteSetting(setting.id, 'admin_settings')}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        ))
                      )}
                    </div>
                   
-                  <div>
-                    <h3 className="font-medium mb-3">Configurações do Sistema</h3>
-                    {systemSettings.map((setting) => (
-                      <div key={setting.id} className="flex items-center justify-between p-4 border rounded-lg mb-2">
-                        <div>
-                          <p className="font-medium">{setting.setting_key}</p>
-                          <p className="text-sm text-muted-foreground">
-                            {setting.setting_description}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            Atualizado em: {new Date(setting.updated_at).toLocaleDateString('pt-BR')}
-                          </p>
-                        </div>
-                        <Badge variant="outline">
-                          {setting.setting_value ? 'Configurado' : 'Não configurado'}
-                        </Badge>
-                      </div>
-                    ))}
-                  </div>
+                   <div>
+                     <h3 className="font-medium mb-3">Configurações do Sistema</h3>
+                     {systemSettings.map((setting) => (
+                       <div key={setting.id} className="flex items-center justify-between p-4 border rounded-lg mb-2">
+                         <div>
+                           <p className="font-medium">{setting.setting_key}</p>
+                           <p className="text-sm text-muted-foreground">
+                             {setting.setting_description}
+                           </p>
+                           <p className="text-sm text-muted-foreground">
+                             Valor: {setting.setting_value || 'Não configurado'}
+                           </p>
+                           <p className="text-xs text-muted-foreground">
+                             Atualizado em: {new Date(setting.updated_at).toLocaleDateString('pt-BR')}
+                           </p>
+                         </div>
+                         <div className="flex items-center gap-2">
+                           <Badge variant="outline">
+                             Configuração do Sistema
+                           </Badge>
+                           <Button
+                             size="sm"
+                             variant="destructive"
+                             onClick={() => deleteSetting(setting.id, 'system_settings')}
+                           >
+                             <Trash2 className="h-4 w-4" />
+                           </Button>
+                         </div>
+                       </div>
+                     ))}
+                   </div>
                 </div>
               </CardContent>
             </Card>
