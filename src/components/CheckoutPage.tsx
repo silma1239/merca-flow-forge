@@ -7,8 +7,9 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { CheckCircle, Tag, CreditCard, Shield, Star } from 'lucide-react';
+import { CheckCircle, Tag, Shield, Star } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import PaymentMethods from './PaymentMethods';
 
 interface Product {
   id: string;
@@ -50,6 +51,8 @@ export default function CheckoutPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [subtotal, setSubtotal] = useState(0);
   const [discount, setDiscount] = useState(0);
+  const [paymentResult, setPaymentResult] = useState<any>(null);
+  const [currentStep, setCurrentStep] = useState<'form' | 'payment'>('form');
   const { toast } = useToast();
 
   const productId = searchParams.get('product');
@@ -76,8 +79,8 @@ export default function CheckoutPage() {
     if (error) {
       toast({
         variant: "destructive",
-        title: "Product not found",
-        description: "The requested product could not be loaded."
+        title: "Produto não encontrado",
+        description: "O produto solicitado não pôde ser carregado."
       });
     } else {
       setProduct(data);
@@ -149,8 +152,8 @@ export default function CheckoutPage() {
     if (error || !data) {
       toast({
         variant: "destructive",
-        title: "Invalid coupon",
-        description: "The coupon code is not valid or has expired."
+        title: "Cupom inválido",
+        description: "O código do cupom não é válido ou expirou."
       });
       return;
     }
@@ -159,8 +162,8 @@ export default function CheckoutPage() {
     if (data.expires_at && new Date(data.expires_at) < new Date()) {
       toast({
         variant: "destructive",
-        title: "Coupon expired",
-        description: "This coupon has expired."
+        title: "Cupom expirado",
+        description: "Este cupom expirou."
       });
       return;
     }
@@ -169,8 +172,8 @@ export default function CheckoutPage() {
     if (data.min_order_amount > subtotal) {
       toast({
         variant: "destructive",
-        title: "Minimum amount not met",
-        description: `This coupon requires a minimum order of $${data.min_order_amount}.`
+        title: "Valor mínimo não atingido",
+        description: `Este cupom requer pedido mínimo de R$ ${data.min_order_amount}.`
       });
       return;
     }
@@ -178,8 +181,8 @@ export default function CheckoutPage() {
     setAppliedCoupon(data as Coupon);
     toast({
       variant: "default",
-      title: "Coupon applied!",
-      description: `You saved $${data.discount_type === 'percentage' ? 
+      title: "Cupom aplicado!",
+      description: `Você economizou R$ ${data.discount_type === 'percentage' ? 
         (subtotal * data.discount_value / 100).toFixed(2) : 
         data.discount_value.toFixed(2)}!`
     });
@@ -195,12 +198,12 @@ export default function CheckoutPage() {
     setSelectedBumps(newSelected);
   };
 
-  const handleCheckout = async () => {
+  const handlePaymentSubmit = async (method: string, data?: any) => {
     if (!product || !customerInfo.name || !customerInfo.email) {
       toast({
         variant: "destructive",
-        title: "Missing information",
-        description: "Please fill in all required fields."
+        title: "Informações obrigatórias",
+        description: "Preencha todos os campos obrigatórios."
       });
       return;
     }
@@ -208,28 +211,34 @@ export default function CheckoutPage() {
     setIsLoading(true);
 
     try {
-      const { data, error } = await supabase.functions.invoke('create-payment', {
+      const { data: result, error } = await supabase.functions.invoke('create-transparent-payment', {
         body: {
           productId: product.id,
-          customerInfo,
+          customerInfo: { ...customerInfo, document: data?.document },
           selectedBumps: Array.from(selectedBumps),
           couponCode: appliedCoupon?.code,
           subtotal,
           discount,
-          total: subtotal - discount
+          total: subtotal - discount,
+          paymentMethod: method,
+          cardData: data?.cardData
         }
       });
 
       if (error) throw error;
 
-      if (data.checkoutUrl) {
-        window.location.href = data.checkoutUrl;
-      }
+      setPaymentResult(result);
+      setCurrentStep('payment');
+      
+      toast({
+        title: "Pagamento criado!",
+        description: method === 'pix' ? "QR Code PIX gerado com sucesso" : "Pagamento processado"
+      });
     } catch (error) {
       toast({
         variant: "destructive",
-        title: "Checkout error",
-        description: "There was an issue processing your order. Please try again."
+        title: "Erro no checkout",
+        description: "Houve um problema ao processar seu pedido. Tente novamente."
       });
     } finally {
       setIsLoading(false);
@@ -240,8 +249,8 @@ export default function CheckoutPage() {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-2xl font-semibold mb-2">Loading...</h1>
-          <p className="text-muted-foreground">Please wait while we load your product.</p>
+          <h1 className="text-2xl font-semibold mb-2">Carregando...</h1>
+          <p className="text-muted-foreground">Aguarde enquanto carregamos seu produto.</p>
         </div>
       </div>
     );
@@ -255,15 +264,15 @@ export default function CheckoutPage() {
           <div className="flex items-center justify-center gap-6 mb-8">
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Shield className="h-4 w-4 text-success" />
-              Secure Checkout
-            </div>
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <CreditCard className="h-4 w-4 text-success" />
-              Safe Payment
+              Checkout Seguro
             </div>
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <CheckCircle className="h-4 w-4 text-success" />
-              Money Back Guarantee
+              Pagamento Protegido
+            </div>
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <CheckCircle className="h-4 w-4 text-success" />
+              Garantia de Devolução
             </div>
           </div>
 
@@ -284,12 +293,12 @@ export default function CheckoutPage() {
                 <CardContent>
                   <p className="text-muted-foreground mb-4">{product.description}</p>
                   <div className="text-center">
-                    <div className="text-3xl font-bold text-primary">${product.price}</div>
+                    <div className="text-3xl font-bold text-primary">R$ {product.price.toFixed(2)}</div>
                     <div className="flex items-center justify-center gap-1 mt-2">
                       {[1,2,3,4,5].map(i => (
                         <Star key={i} className="h-4 w-4 fill-warning text-warning" />
                       ))}
-                      <span className="text-sm text-muted-foreground ml-2">5.0 (2,431 reviews)</span>
+                      <span className="text-sm text-muted-foreground ml-2">5.0 (2.431 avaliações)</span>
                     </div>
                   </div>
                 </CardContent>
@@ -321,13 +330,13 @@ export default function CheckoutPage() {
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <span className="text-lg line-through text-muted-foreground">
-                          ${bump.product.price}
+                          R$ {bump.product.price.toFixed(2)}
                         </span>
                         <span className="text-xl font-bold text-primary">
-                          ${(bump.product.price * (1 - bump.discount_percentage / 100)).toFixed(2)}
+                          R$ {(bump.product.price * (1 - bump.discount_percentage / 100)).toFixed(2)}
                         </span>
                         <Badge variant="secondary" className="bg-success/10 text-success">
-                          Save {bump.discount_percentage}%
+                          {bump.discount_percentage}% OFF
                         </Badge>
                       </div>
                     </div>
@@ -336,114 +345,114 @@ export default function CheckoutPage() {
               ))}
             </div>
 
-            {/* Checkout Form */}
+            {/* Checkout Form or Payment */}
             <div className="space-y-6">
-              <Card className="border-2 border-primary/20 shadow-lg">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <CreditCard className="h-5 w-5" />
-                    Checkout Details
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="name">Full Name *</Label>
-                    <Input
-                      id="name"
-                      value={customerInfo.name}
-                      onChange={(e) => setCustomerInfo(prev => ({ ...prev, name: e.target.value }))}
-                      placeholder="Enter your full name"
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="email">Email Address *</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      value={customerInfo.email}
-                      onChange={(e) => setCustomerInfo(prev => ({ ...prev, email: e.target.value }))}
-                      placeholder="Enter your email address"
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="phone">Phone Number</Label>
-                    <Input
-                      id="phone"
-                      value={customerInfo.phone}
-                      onChange={(e) => setCustomerInfo(prev => ({ ...prev, phone: e.target.value }))}
-                      placeholder="Enter your phone number"
-                    />
-                  </div>
-
-                  <Separator />
-
-                  {/* Coupon Code */}
-                  <div className="space-y-2">
-                    <Label className="flex items-center gap-2">
-                      <Tag className="h-4 w-4" />
-                      Coupon Code
-                    </Label>
-                    <div className="flex gap-2">
-                      <Input
-                        value={couponCode}
-                        onChange={(e) => setCouponCode(e.target.value)}
-                        placeholder="Enter coupon code"
-                        disabled={!!appliedCoupon}
-                      />
-                      <Button
-                        variant="outline"
-                        onClick={applyCoupon}
-                        disabled={!couponCode.trim() || !!appliedCoupon}
-                      >
-                        Apply
-                      </Button>
-                    </div>
-                    {appliedCoupon && (
-                      <p className="text-sm text-success flex items-center gap-1">
-                        <CheckCircle className="h-4 w-4" />
-                        Coupon "{appliedCoupon.code}" applied!
-                      </p>
-                    )}
-                  </div>
-
-                  <Separator />
-
-                  {/* Order Summary */}
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span>Subtotal:</span>
-                      <span>${subtotal.toFixed(2)}</span>
-                    </div>
-                    {discount > 0 && (
-                      <div className="flex justify-between text-sm text-success">
-                        <span>Discount:</span>
-                        <span>-${discount.toFixed(2)}</span>
+              {currentStep === 'form' ? (
+                <>
+                  <Card className="border-2 border-primary/20 shadow-lg">
+                    <CardHeader>
+                      <CardTitle>Informações de Contato</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="name">Nome Completo *</Label>
+                        <Input
+                          id="name"
+                          value={customerInfo.name}
+                          onChange={(e) => setCustomerInfo(prev => ({ ...prev, name: e.target.value }))}
+                          placeholder="Digite seu nome completo"
+                        />
                       </div>
-                    )}
-                    <Separator />
-                    <div className="flex justify-between text-lg font-bold">
-                      <span>Total:</span>
-                      <span>${(subtotal - discount).toFixed(2)}</span>
-                    </div>
-                  </div>
+                      
+                      <div className="space-y-2">
+                        <Label htmlFor="email">Email *</Label>
+                        <Input
+                          id="email"
+                          type="email"
+                          value={customerInfo.email}
+                          onChange={(e) => setCustomerInfo(prev => ({ ...prev, email: e.target.value }))}
+                          placeholder="Digite seu email"
+                        />
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <Label htmlFor="phone">Telefone</Label>
+                        <Input
+                          id="phone"
+                          value={customerInfo.phone}
+                          onChange={(e) => setCustomerInfo(prev => ({ ...prev, phone: e.target.value }))}
+                          placeholder="Digite seu telefone"
+                        />
+                      </div>
 
-                  <Button 
-                    onClick={handleCheckout}
-                    disabled={isLoading}
-                    className="w-full text-lg py-6 shadow-lg hover:shadow-xl transition-all duration-300"
-                    size="lg"
-                  >
-                    {isLoading ? 'Processing...' : `Complete Purchase - $${(subtotal - discount).toFixed(2)}`}
-                  </Button>
+                      <Separator />
 
-                  <p className="text-xs text-center text-muted-foreground">
-                    By clicking "Complete Purchase", you agree to our terms and conditions.
-                    Your payment is secured by Mercado Pago.
-                  </p>
-                </CardContent>
-              </Card>
+                      {/* Coupon Code */}
+                      <div className="space-y-2">
+                        <Label className="flex items-center gap-2">
+                          <Tag className="h-4 w-4" />
+                          Cupom de Desconto
+                        </Label>
+                        <div className="flex gap-2">
+                          <Input
+                            value={couponCode}
+                            onChange={(e) => setCouponCode(e.target.value)}
+                            placeholder="Digite o código do cupom"
+                            disabled={!!appliedCoupon}
+                          />
+                          <Button
+                            variant="outline"
+                            onClick={applyCoupon}
+                            disabled={!couponCode.trim() || !!appliedCoupon}
+                          >
+                            Aplicar
+                          </Button>
+                        </div>
+                        {appliedCoupon && (
+                          <p className="text-sm text-success flex items-center gap-1">
+                            <CheckCircle className="h-4 w-4" />
+                            Cupom "{appliedCoupon.code}" aplicado!
+                          </p>
+                        )}
+                      </div>
+
+                      <Separator />
+
+                      {/* Order Summary */}
+                      <div className="space-y-2">
+                        <div className="flex justify-between text-sm">
+                          <span>Subtotal:</span>
+                          <span>R$ {subtotal.toFixed(2)}</span>
+                        </div>
+                        {discount > 0 && (
+                          <div className="flex justify-between text-sm text-success">
+                            <span>Desconto:</span>
+                            <span>-R$ {discount.toFixed(2)}</span>
+                          </div>
+                        )}
+                        <Separator />
+                        <div className="flex justify-between text-lg font-bold">
+                          <span>Total:</span>
+                          <span>R$ {(subtotal - discount).toFixed(2)}</span>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <PaymentMethods 
+                    total={subtotal - discount}
+                    onPaymentSubmit={handlePaymentSubmit}
+                    isLoading={isLoading}
+                  />
+                </>
+              ) : (
+                <PaymentMethods 
+                  total={subtotal - discount}
+                  onPaymentSubmit={handlePaymentSubmit}
+                  isLoading={isLoading}
+                  paymentResult={paymentResult}
+                />
+              )}
             </div>
           </div>
         </div>

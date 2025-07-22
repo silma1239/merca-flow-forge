@@ -7,6 +7,9 @@ import Index from "./pages/Index";
 import CheckoutPage from "./components/CheckoutPage";
 import PaymentSuccess from "./components/PaymentSuccess";
 import PaymentFailure from "./components/PaymentFailure";
+import Dashboard from "./pages/Dashboard";
+import Orders from "./pages/Orders";
+import Coupons from "./pages/Coupons";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
