@@ -105,6 +105,52 @@ All colors MUST be HSL.
     --popover: 222.2 84% 4.9%;
     --popover-foreground: 210 40% 98%;
 
+    --primary: 217.2 91.2% 59.8%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 217.2 91.2% 59.8%;
+
+    --success: 142.1 76.2% 36.3%;
+    --success-foreground: 355.7 100% 97.3%;
+    --success-light: 138.5 76.5% 96.7%;
+
+    --warning: 35.5 91.7% 32.9%;
+    --warning-foreground: 0 0% 100%;
+    --warning-light: 48 100% 96.1%;
+
+    --pix: 142.1 76.2% 36.3%;
+    --credit-card: 217.2 91.2% 59.8%;
+    --boleto: 35.5 91.7% 32.9%;
+
+    --sidebar-background: 222.2 84% 4.9%;
+    --sidebar-foreground: 210 40% 98%;
+    --sidebar-primary: 217.2 91.2% 59.8%;
+    --sidebar-primary-foreground: 222.2 47.4% 11.2%;
+    --sidebar-accent: 217.2 32.6% 17.5%;
+    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-border: 217.2 32.6% 17.5%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+
     --primary: 210 40% 98%;
     --primary-foreground: 222.2 47.4% 11.2%;
 
@@ -132,6 +178,19 @@ All colors MUST be HSL.
     --sidebar-border: 240 3.7% 15.9%;
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
+}
+
+/* Menu button styles */
+.menu-button {
+  @apply p-6 rounded-xl bg-gradient-to-br from-card to-card/50 border-2 border-border hover:border-primary/20 transition-all duration-300 hover:shadow-lg hover:scale-105 backdrop-blur-sm;
+}
+
+.menu-icon {
+  @apply p-4 bg-primary/10 rounded-lg mb-4 w-fit mx-auto group-hover:bg-primary/20 transition-colors duration-300;
+}
+
+.menu-icon svg {
+  @apply text-primary transition-colors duration-300;
 }
 
 /* Custom animations for smooth effects */

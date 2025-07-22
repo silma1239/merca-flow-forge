@@ -45,7 +45,20 @@ serve(async (req) => {
     const paymentData: TransparentPaymentRequest = await req.json();
     console.log("Processing transparent payment:", paymentData);
 
-    const accessToken = Deno.env.get("MERCADO_PAGO_ACCESS_TOKEN");
+    // Get access token from database or environment
+    let accessToken = Deno.env.get('MERCADO_PAGO_ACCESS_TOKEN');
+    
+    // Try to get token from database first
+    const { data: tokenData } = await supabaseService
+      .from('admin_settings')
+      .select('setting_value')
+      .eq('setting_key', 'MERCADO_PAGO_ACCESS_TOKEN')
+      .single();
+    
+    if (tokenData?.setting_value) {
+      accessToken = tokenData.setting_value;
+    }
+
     if (!accessToken) {
       throw new Error("Mercado Pago access token not configured");
     }

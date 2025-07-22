@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/hooks/useAuth';
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { ShoppingCart, CreditCard, Zap, Shield, Star, ArrowRight, CheckCircle, Package, LogIn, Settings, LogOut, BarChart3, Tag } from 'lucide-react';
 
 interface Product {
@@ -56,8 +57,10 @@ const Index = () => {
                 Sua Loja
               </span>
             </div>
-            <nav className="flex items-center space-x-6">
-              {user ? (
+            <div className="flex items-center space-x-4">
+              <ThemeToggle />
+              <nav className="flex items-center space-x-6">
+                {user ? (
                 <>
                   <span className="text-sm text-muted-foreground hidden md:block">
                     Olá, {user.email}
@@ -80,6 +83,10 @@ const Index = () => {
                         <Star className="h-4 w-4 inline mr-1" />
                         <span className="hidden sm:inline">Cupons</span>
                       </Link>
+                      <Link to="/admin-settings" className="text-muted-foreground hover:text-foreground transition-colors">
+                        <Settings className="h-4 w-4 inline mr-1" />
+                        <span className="hidden sm:inline">Configurações</span>
+                      </Link>
                     </>
                   )}
                   <Button variant="outline" size="sm" onClick={() => signOut()}>
@@ -95,7 +102,8 @@ const Index = () => {
                   </Button>
                 </Link>
               )}
-            </nav>
+              </nav>
+            </div>
           </div>
         </div>
       </header>
@@ -113,7 +121,7 @@ const Index = () => {
               </p>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
               <div className="menu-button group cursor-pointer" onClick={() => navigate('/dashboard')}>
                 <div className="relative z-10">
                   <div className="menu-icon">
@@ -166,6 +174,20 @@ const Index = () => {
                   </h3>
                   <p className="text-muted-foreground text-sm group-hover:text-foreground/80 transition-colors">
                     Criar promoções e descontos
+                  </p>
+                </div>
+              </div>
+              
+              <div className="menu-button group cursor-pointer" onClick={() => navigate('/admin-settings')}>
+                <div className="relative z-10">
+                  <div className="menu-icon">
+                    <Settings className="h-8 w-8" />
+                  </div>
+                  <h3 className="text-xl font-bold text-foreground mb-2 group-hover:text-primary transition-colors">
+                    Configurações
+                  </h3>
+                  <p className="text-muted-foreground text-sm group-hover:text-foreground/80 transition-colors">
+                    APIs e configurações do sistema
                   </p>
                 </div>
               </div>
