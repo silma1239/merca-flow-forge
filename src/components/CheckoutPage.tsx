@@ -31,6 +31,7 @@ interface OrderBump {
   discount_percentage: number;
   bump_product_id: string;
   product: Product;
+  delivery_link?: string;
 }
 
 interface Coupon {
@@ -216,27 +217,74 @@ export default function CheckoutPage() {
   };
 
   const loadOrderBumps = async (productId: string) => {
-    const { data, error } = await supabase
-      .from('order_bumps')
-      .select(`
-        id,
-        title,
-        description,
-        discount_percentage,
-        bump_product_id,
-        product:products!order_bumps_bump_product_id_fkey (
-          id,
-          name,
-          description,
-          price,
-          redirect_url
-        )
-      `)
-      .eq('product_id', productId)
-      .eq('is_active', true);
+    try {
+      // Carrega order bumps configurados
+      const { data: settingsData, error: settingsError } = await supabase
+        .from('order_bump_settings')
+        .select('*')
+        .eq('product_id', productId)
+        .eq('is_active', true);
 
-    if (!error && data) {
-      setOrderBumps(data as OrderBump[]);
+      if (!settingsError && settingsData && settingsData.length > 0) {
+        console.log('Order bumps settings encontrados:', settingsData);
+        
+        // Para cada order bump setting, buscar o produto associado
+        const orderBumpsWithProducts = await Promise.all(
+          settingsData.map(async (setting) => {
+            const { data: productData } = await supabase
+              .from('products')
+              .select('id, name, description, price, redirect_url')
+              .eq('id', setting.bump_product_id)
+              .single();
+            
+            return {
+              id: setting.id,
+              title: setting.title,
+              description: setting.description || '',
+              discount_percentage: setting.discount_percentage || 0,
+              bump_product_id: setting.bump_product_id,
+              delivery_link: setting.delivery_link,
+              product: productData || {
+                id: setting.bump_product_id,
+                name: 'Produto não encontrado',
+                description: '',
+                price: 0,
+                redirect_url: ''
+              }
+            };
+          })
+        );
+        
+        setOrderBumps(orderBumpsWithProducts);
+        return;
+      }
+
+      // Se não encontrar na tabela settings, tenta da tabela legacy
+      const { data, error } = await supabase
+        .from('order_bumps')
+        .select(`
+          id,
+          title,
+          description,
+          discount_percentage,
+          bump_product_id,
+          product:products!order_bumps_bump_product_id_fkey (
+            id,
+            name,
+            description,
+            price,
+            redirect_url
+          )
+        `)
+        .eq('product_id', productId)
+        .eq('is_active', true);
+
+      if (!error && data) {
+        console.log('Order bumps carregados da tabela legacy:', data);
+        setOrderBumps(data as OrderBump[]);
+      }
+    } catch (error) {
+      console.error('Erro ao carregar order bumps:', error);
     }
   };
 

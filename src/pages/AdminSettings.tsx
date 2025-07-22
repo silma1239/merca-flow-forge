@@ -76,6 +76,11 @@ export default function AdminSettings() {
   const [newBumpBumpProductId, setNewBumpBumpProductId] = useState("");
   const [newBumpDiscount, setNewBumpDiscount] = useState(0);
   const [newBumpDeliveryLink, setNewBumpDeliveryLink] = useState("");
+  
+  // States for creating new settings
+  const [newSettingKey, setNewSettingKey] = useState("");
+  const [newSettingValue, setNewSettingValue] = useState("");
+  const [newSettingDescription, setNewSettingDescription] = useState("");
 
   useEffect(() => {
     loadSettings();
@@ -83,6 +88,46 @@ export default function AdminSettings() {
     loadSystemSettings();
     loadOrderBumps();
     loadProducts();
+
+    // Real-time listeners
+    const systemSettingsChannel = supabase
+      .channel('system-settings-changes')
+      .on('postgres_changes', 
+        { event: '*', schema: 'public', table: 'system_settings' },
+        () => loadSystemSettings()
+      )
+      .subscribe();
+
+    const orderBumpChannel = supabase
+      .channel('order-bump-changes')
+      .on('postgres_changes', 
+        { event: '*', schema: 'public', table: 'order_bump_settings' },
+        () => loadOrderBumps()
+      )
+      .subscribe();
+
+    const adminSettingsChannel = supabase
+      .channel('admin-settings-changes')
+      .on('postgres_changes', 
+        { event: '*', schema: 'public', table: 'admin_settings' },
+        () => loadSettings()
+      )
+      .subscribe();
+
+    const usersChannel = supabase
+      .channel('users-changes')
+      .on('postgres_changes', 
+        { event: '*', schema: 'public', table: 'profiles' },
+        () => loadUsers()
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(systemSettingsChannel);
+      supabase.removeChannel(orderBumpChannel);
+      supabase.removeChannel(adminSettingsChannel);
+      supabase.removeChannel(usersChannel);
+    };
   }, []);
 
   const loadSettings = async () => {
@@ -219,9 +264,12 @@ export default function AdminSettings() {
         setting_key: 'MERCADO_PAGO_ACCESS_TOKEN',
         setting_value: mercadoPagoToken,
         updated_by: user?.id
+      }, {
+        onConflict: 'setting_key'
       });
 
     if (error) {
+      console.error('Erro ao salvar token do Mercado Pago:', error);
       toast({
         title: "Erro",
         description: "Erro ao salvar token do Mercado Pago",
@@ -232,7 +280,8 @@ export default function AdminSettings() {
         title: "Sucesso",
         description: "Token do Mercado Pago salvo com sucesso",
       });
-      loadSettings();
+      // Recarregar configurações em tempo real
+      await loadSettings();
     }
     
     setLoading(false);
@@ -257,9 +306,12 @@ export default function AdminSettings() {
         setting_value: systemName,
         setting_description: 'Nome do sistema exibido na interface',
         updated_by: user?.id
+      }, {
+        onConflict: 'setting_key'
       });
 
     if (error) {
+      console.error('Erro ao salvar nome do sistema:', error);
       toast({
         title: "Erro",
         description: "Erro ao salvar nome do sistema",
@@ -270,7 +322,8 @@ export default function AdminSettings() {
         title: "Sucesso",
         description: "Nome do sistema salvo com sucesso",
       });
-      loadSystemSettings();
+      // Recarregar configurações do sistema em tempo real
+      await loadSystemSettings();
     }
     
     setLoading(false);
@@ -394,6 +447,47 @@ export default function AdminSettings() {
       setConfirmPassword("");
     }
 
+    setLoading(false);
+  };
+
+  const createSetting = async () => {
+    if (!newSettingKey.trim() || !newSettingValue.trim()) {
+      toast({
+        title: "Erro",
+        description: "Chave e valor da configuração são obrigatórios",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setLoading(true);
+    
+    const { error } = await supabase
+      .from('admin_settings')
+      .insert({
+        setting_key: newSettingKey.toUpperCase().replace(/\s+/g, '_'),
+        setting_value: newSettingValue,
+        updated_by: user?.id
+      });
+
+    if (error) {
+      console.error('Erro ao criar configuração:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao criar configuração",
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Sucesso",
+        description: "Configuração criada com sucesso",
+      });
+      setNewSettingKey("");
+      setNewSettingValue("");
+      setNewSettingDescription("");
+      await loadSettings();
+    }
+    
     setLoading(false);
   };
 
@@ -740,22 +834,66 @@ export default function AdminSettings() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  <div>
-                    <h3 className="font-medium mb-3">Configurações Administrativas</h3>
-                    {settings.map((setting) => (
-                      <div key={setting.id} className="flex items-center justify-between p-4 border rounded-lg mb-2">
-                        <div>
-                          <p className="font-medium">{setting.setting_key}</p>
-                          <p className="text-sm text-muted-foreground">
-                            Atualizado em: {new Date(setting.updated_at).toLocaleDateString('pt-BR')}
-                          </p>
-                        </div>
-                        <Badge variant="outline">
-                          {setting.setting_value ? 'Configurado' : 'Não configurado'}
-                        </Badge>
-                      </div>
-                    ))}
-                  </div>
+                   <div>
+                     <h3 className="font-medium mb-3">Configurações Administrativas</h3>
+                     <div className="space-y-4 mb-6">
+                       <div className="p-4 bg-muted/50 rounded-lg">
+                         <h4 className="font-medium mb-3">Adicionar Nova Configuração</h4>
+                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                           <div>
+                             <Label htmlFor="setting-key">Chave da Configuração</Label>
+                             <Input
+                               id="setting-key"
+                               placeholder="Ex: EMAIL_SMTP_HOST"
+                               value={newSettingKey}
+                               onChange={(e) => setNewSettingKey(e.target.value)}
+                             />
+                           </div>
+                           <div>
+                             <Label htmlFor="setting-value">Valor</Label>
+                             <Input
+                               id="setting-value"
+                               placeholder="Valor da configuração"
+                               value={newSettingValue}
+                               onChange={(e) => setNewSettingValue(e.target.value)}
+                             />
+                           </div>
+                           <div className="flex items-end">
+                             <Button 
+                               onClick={createSetting}
+                               disabled={loading}
+                               className="w-full"
+                             >
+                               {loading ? "Salvando..." : "Adicionar"}
+                             </Button>
+                           </div>
+                         </div>
+                       </div>
+                     </div>
+                     
+                     {settings.length === 0 ? (
+                       <div className="text-center py-8 text-muted-foreground">
+                         Nenhuma configuração encontrada
+                       </div>
+                     ) : (
+                       settings.map((setting) => (
+                         <div key={setting.id} className="flex items-center justify-between p-4 border rounded-lg mb-2">
+                           <div>
+                             <p className="font-medium">{setting.setting_key}</p>
+                             <p className="text-sm text-muted-foreground">
+                               Valor: {setting.setting_value ? '***' : 'Não configurado'}
+                             </p>
+                             <p className="text-xs text-muted-foreground">
+                               Atualizado em: {new Date(setting.updated_at).toLocaleDateString('pt-BR')}
+                             </p>
+                           </div>
+                           <Badge variant="outline">
+                             {setting.setting_value ? 'Configurado' : 'Não configurado'}
+                           </Badge>
+                         </div>
+                       ))
+                     )}
+                   </div>
                   
                   <div>
                     <h3 className="font-medium mb-3">Configurações do Sistema</h3>

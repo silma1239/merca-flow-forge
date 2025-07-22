@@ -5,6 +5,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { ThemeProvider } from "@/hooks/useTheme";
+import { useSystemSettings } from "@/hooks/useSystemSettings";
+import { useEffect } from "react";
 import Index from "./pages/Index";
 import CheckoutPage from "./components/CheckoutPage";
 import PaymentSuccess from "./components/PaymentSuccess";
@@ -19,6 +21,34 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
+const AppContent = () => {
+  const { systemName } = useSystemSettings();
+  
+  useEffect(() => {
+    document.title = systemName;
+  }, [systemName]);
+
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<Index />} />
+        <Route path="/auth" element={<Auth />} />
+        <Route path="/checkout" element={<CheckoutPage />} />
+        <Route path="/payment-success" element={<PaymentSuccess />} />
+        <Route path="/payment-failure" element={<PaymentFailure />} />
+        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/orders" element={<Orders />} />
+        <Route path="/coupons" element={<Coupons />} />
+        <Route path="/products" element={<ProductManagement />} />
+        <Route path="/product-management" element={<ProductManagement />} />
+        <Route path="/admin-settings" element={<AdminSettings />} />
+        {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </BrowserRouter>
+  );
+};
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
@@ -26,23 +56,7 @@ const App = () => (
         <TooltipProvider>
           <Toaster />
           <Sonner />
-          <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/auth" element={<Auth />} />
-            <Route path="/checkout" element={<CheckoutPage />} />
-            <Route path="/payment-success" element={<PaymentSuccess />} />
-            <Route path="/payment-failure" element={<PaymentFailure />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/orders" element={<Orders />} />
-            <Route path="/coupons" element={<Coupons />} />
-            <Route path="/products" element={<ProductManagement />} />
-            <Route path="/product-management" element={<ProductManagement />} />
-            <Route path="/admin-settings" element={<AdminSettings />} />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-          </BrowserRouter>
+          <AppContent />
         </TooltipProvider>
       </ThemeProvider>
     </AuthProvider>
