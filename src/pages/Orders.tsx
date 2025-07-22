@@ -5,9 +5,10 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Calendar, Search, Eye, Mail, Phone, Package, ArrowLeft } from 'lucide-react';
+import { Calendar, Search, Eye, Mail, Phone, Package, ArrowLeft, Trash2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { useToast } from '@/hooks/use-toast';
 
 interface Order {
   id: string;
@@ -41,6 +42,7 @@ export default function Orders() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [isLoading, setIsLoading] = useState(true);
+  const { toast } = useToast();
 
   useEffect(() => {
     loadOrders();
@@ -129,6 +131,37 @@ export default function Orders() {
       case 'cancelled': return 'Cancelado';
       case 'refunded': return 'Reembolsado';
       default: return status;
+    }
+  };
+
+  const handleDeleteOrder = async (orderId: string) => {
+    try {
+      if (!window.confirm("Tem certeza que deseja excluir este pedido? Esta ação não pode ser desfeita.")) {
+        return;
+      }
+
+      const { error } = await supabase
+        .from('orders')
+        .delete()
+        .eq('id', orderId);
+
+      if (error) {
+        throw error;
+      }
+
+      toast({
+        title: "Pedido excluído",
+        description: "O pedido foi excluído com sucesso.",
+      });
+
+      loadOrders(); // Recarregar pedidos
+    } catch (error) {
+      console.error('Erro ao excluir pedido:', error);
+      toast({
+        variant: "destructive",
+        title: "Erro ao excluir pedido",
+        description: "Não foi possível excluir o pedido. Tente novamente.",
+      });
     }
   };
 
@@ -243,90 +276,100 @@ export default function Orders() {
                         )}
                       </div>
 
-                      <Dialog>
-                        <DialogTrigger asChild>
-                          <Button size="sm" variant="outline" onClick={() => setSelectedOrder(order)}>
-                            <Eye className="h-4 w-4 mr-2" />
-                            Ver Detalhes
-                          </Button>
-                        </DialogTrigger>
-                        <DialogContent className="max-w-2xl">
-                          <DialogHeader>
-                            <DialogTitle>Detalhes do Pedido</DialogTitle>
-                          </DialogHeader>
-                          {selectedOrder && (
-                            <div className="space-y-4">
-                              <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                  <h4 className="font-semibold mb-2">Informações do Cliente</h4>
-                                  <div className="space-y-1 text-sm">
-                                    <p><strong>Nome:</strong> {selectedOrder.customer_name}</p>
-                                    <p><strong>Email:</strong> {selectedOrder.customer_email}</p>
-                                    {selectedOrder.customer_phone && (
-                                      <p><strong>Telefone:</strong> {selectedOrder.customer_phone}</p>
-                                    )}
+                      <div className="flex gap-2">
+                        <Dialog>
+                          <DialogTrigger asChild>
+                            <Button size="sm" variant="outline" onClick={() => setSelectedOrder(order)}>
+                              <Eye className="h-4 w-4 mr-2" />
+                              Ver Detalhes
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent className="max-w-2xl">
+                            <DialogHeader>
+                              <DialogTitle>Detalhes do Pedido</DialogTitle>
+                            </DialogHeader>
+                            {selectedOrder && (
+                              <div className="space-y-4">
+                                <div className="grid grid-cols-2 gap-4">
+                                  <div>
+                                    <h4 className="font-semibold mb-2">Informações do Cliente</h4>
+                                    <div className="space-y-1 text-sm">
+                                      <p><strong>Nome:</strong> {selectedOrder.customer_name}</p>
+                                      <p><strong>Email:</strong> {selectedOrder.customer_email}</p>
+                                      {selectedOrder.customer_phone && (
+                                        <p><strong>Telefone:</strong> {selectedOrder.customer_phone}</p>
+                                      )}
+                                    </div>
+                                  </div>
+                                  <div>
+                                    <h4 className="font-semibold mb-2">Informações do Pagamento</h4>
+                                    <div className="space-y-1 text-sm">
+                                      <p><strong>Status:</strong> 
+                                        <Badge className={`ml-2 ${getStatusColor(selectedOrder.payment_status)}`}>
+                                          {getStatusText(selectedOrder.payment_status)}
+                                        </Badge>
+                                      </p>
+                                      {selectedOrder.payment_method && (
+                                        <p><strong>Método:</strong> {selectedOrder.payment_method.toUpperCase()}</p>
+                                      )}
+                                      <p><strong>Data:</strong> {new Date(selectedOrder.created_at).toLocaleString('pt-BR')}</p>
+                                    </div>
                                   </div>
                                 </div>
-                                <div>
-                                  <h4 className="font-semibold mb-2">Informações do Pagamento</h4>
-                                  <div className="space-y-1 text-sm">
-                                    <p><strong>Status:</strong> 
-                                      <Badge className={`ml-2 ${getStatusColor(selectedOrder.payment_status)}`}>
-                                        {getStatusText(selectedOrder.payment_status)}
-                                      </Badge>
-                                    </p>
-                                    {selectedOrder.payment_method && (
-                                      <p><strong>Método:</strong> {selectedOrder.payment_method.toUpperCase()}</p>
-                                    )}
-                                    <p><strong>Data:</strong> {new Date(selectedOrder.created_at).toLocaleString('pt-BR')}</p>
-                                  </div>
-                                </div>
-                              </div>
 
-                              {selectedOrder.order_items && selectedOrder.order_items.length > 0 && (
-                                <div>
-                                  <h4 className="font-semibold mb-2 flex items-center gap-2">
-                                    <Package className="h-4 w-4" />
-                                    Itens do Pedido
-                                  </h4>
-                                  <div className="space-y-2">
-                                    {selectedOrder.order_items.map((item) => (
-                                      <div key={item.id} className="flex justify-between items-center p-3 bg-muted/50 rounded-lg">
-                                        <div>
-                                          <p className="font-medium">{item.product.name}</p>
-                                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                            <span>Qtd: {item.quantity}</span>
-                                            {item.is_order_bump && (
-                                              <Badge variant="secondary" className="text-xs">Order Bump</Badge>
-                                            )}
+                                {selectedOrder.order_items && selectedOrder.order_items.length > 0 && (
+                                  <div>
+                                    <h4 className="font-semibold mb-2 flex items-center gap-2">
+                                      <Package className="h-4 w-4" />
+                                      Itens do Pedido
+                                    </h4>
+                                    <div className="space-y-2">
+                                      {selectedOrder.order_items.map((item) => (
+                                        <div key={item.id} className="flex justify-between items-center p-3 bg-muted/50 rounded-lg">
+                                          <div>
+                                            <p className="font-medium">{item.product.name}</p>
+                                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                              <span>Qtd: {item.quantity}</span>
+                                              {item.is_order_bump && (
+                                                <Badge variant="secondary" className="text-xs">Order Bump</Badge>
+                                              )}
+                                            </div>
+                                          </div>
+                                          <div className="text-right">
+                                            <p className="font-semibold">R$ {(item.unit_price * item.quantity).toFixed(2)}</p>
+                                            <p className="text-sm text-muted-foreground">R$ {item.unit_price.toFixed(2)} cada</p>
                                           </div>
                                         </div>
-                                        <div className="text-right">
-                                          <p className="font-semibold">R$ {(item.unit_price * item.quantity).toFixed(2)}</p>
-                                          <p className="text-sm text-muted-foreground">R$ {item.unit_price.toFixed(2)} cada</p>
-                                        </div>
-                                      </div>
-                                    ))}
-                                  </div>
-                                </div>
-                              )}
-
-                              <div className="border-t pt-4">
-                                <div className="flex justify-between items-center text-lg font-bold">
-                                  <span>Total:</span>
-                                  <span>R$ {selectedOrder.total_amount.toFixed(2)}</span>
-                                </div>
-                                {selectedOrder.discount_amount > 0 && (
-                                  <div className="flex justify-between items-center text-sm text-success">
-                                    <span>Desconto aplicado:</span>
-                                    <span>-R$ {selectedOrder.discount_amount.toFixed(2)}</span>
+                                      ))}
+                                    </div>
                                   </div>
                                 )}
+
+                                <div className="border-t pt-4">
+                                  <div className="flex justify-between items-center text-lg font-bold">
+                                    <span>Total:</span>
+                                    <span>R$ {selectedOrder.total_amount.toFixed(2)}</span>
+                                  </div>
+                                  {selectedOrder.discount_amount > 0 && (
+                                    <div className="flex justify-between items-center text-sm text-success">
+                                      <span>Desconto aplicado:</span>
+                                      <span>-R$ {selectedOrder.discount_amount.toFixed(2)}</span>
+                                    </div>
+                                  )}
+                                </div>
                               </div>
-                            </div>
-                          )}
-                        </DialogContent>
-                      </Dialog>
+                            )}
+                          </DialogContent>
+                        </Dialog>
+                        
+                        <Button 
+                          size="sm" 
+                          variant="destructive" 
+                          onClick={() => handleDeleteOrder(order.id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 </div>

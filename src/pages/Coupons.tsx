@@ -150,6 +150,34 @@ export default function Coupons() {
     }
   };
 
+  const deleteCoupon = async (id: string) => {
+    try {
+      if (!window.confirm("Tem certeza que deseja excluir este cupom?")) {
+        return;
+      }
+
+      const { error } = await supabase
+        .from('coupons')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+      
+      toast({ 
+        title: "Cupom excluído com sucesso!"
+      });
+      
+      loadCoupons();
+    } catch (error) {
+      console.error('Erro ao excluir cupom:', error);
+      toast({
+        variant: "destructive",
+        title: "Erro ao excluir cupom",
+        description: "Não foi possível excluir o cupom"
+      });
+    }
+  };
+
   const copyCouponCode = (code: string) => {
     navigator.clipboard.writeText(code);
     toast({ title: "Código copiado!", description: `Cupom "${code}" copiado para área de transferência` });
@@ -353,11 +381,14 @@ export default function Coupons() {
                         variant={coupon.is_active ? "destructive" : "default"}
                         onClick={() => handleToggleCoupon(coupon.id, coupon.is_active)}
                       >
-                        {coupon.is_active ? (
-                          <Trash2 className="h-4 w-4" />
-                        ) : (
-                          <Plus className="h-4 w-4" />
-                        )}
+                        {coupon.is_active ? "Desativar" : "Ativar"}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={() => deleteCoupon(coupon.id)}
+                      >
+                        <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
                   </div>

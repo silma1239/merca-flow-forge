@@ -139,18 +139,29 @@ export default function Dashboard() {
 
   const handleDeleteProduct = async (id: string) => {
     try {
-      await supabase
+      if (!window.confirm('Tem certeza que deseja excluir este produto?')) {
+        return;
+      }
+
+      const { error } = await supabase
         .from('products')
-        .update({ is_active: false })
+        .delete()
         .eq('id', id);
+        
+      if (error) throw error;
       
-      toast({ title: "Produto desativado com sucesso!" });
+      toast({ 
+        title: "Produto excluído com sucesso!",
+        variant: "default"
+      });
+      
       loadDashboardData();
     } catch (error) {
       toast({ 
         variant: "destructive",
-        title: "Erro ao desativar produto" 
+        title: "Erro ao excluir produto" 
       });
+      console.error('Erro ao excluir produto:', error);
     }
   };
 
