@@ -17,6 +17,8 @@ interface Product {
   description: string;
   price: number;
   image_url?: string;
+  banner_image_url?: string;
+  uploaded_image_url?: string;
   redirect_url: string;
 }
 
@@ -53,6 +55,7 @@ export default function CheckoutPage() {
   const [discount, setDiscount] = useState(0);
   const [paymentResult, setPaymentResult] = useState<any>(null);
   const [currentStep, setCurrentStep] = useState<'form' | 'payment'>('form');
+  const [bannerImage, setBannerImage] = useState<string | null>(null);
   const { toast } = useToast();
 
   const productId = searchParams.get('product');
@@ -84,6 +87,9 @@ export default function CheckoutPage() {
       });
     } else {
       setProduct(data);
+      if (data.banner_image_url) {
+        setBannerImage(data.banner_image_url);
+      }
     }
   };
 
@@ -258,18 +264,41 @@ export default function CheckoutPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
-      {/* Hero Banner */}
-      <div className="relative bg-gradient-to-r from-primary/20 via-primary/10 to-background">
-        <div className="absolute inset-0 bg-grid-pattern opacity-5"></div>
-        <div className="container mx-auto py-12 px-4 text-center relative">
-          <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent mb-4">
-            Checkout Seguro
-          </h1>
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            Finalize sua compra com segurança e praticidade
-          </p>
+      {/* Banner Hero */}
+      {bannerImage && (
+        <div className="relative h-64 md:h-80 overflow-hidden">
+          <img 
+            src={bannerImage} 
+            alt="Banner do Checkout"
+            className="w-full h-full object-cover"
+          />
+          <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+            <div className="text-center text-white">
+              <h1 className="text-3xl md:text-5xl font-bold mb-4">
+                {product?.name}
+              </h1>
+              <p className="text-lg md:text-xl opacity-90">
+                Oferta Especial - Não Perca!
+              </p>
+            </div>
+          </div>
         </div>
-      </div>
+      )}
+      
+      {/* Hero Banner (apenas se não há banner personalizado) */}
+      {!bannerImage && (
+        <div className="relative bg-gradient-to-r from-primary/20 via-primary/10 to-background">
+          <div className="absolute inset-0 bg-grid-pattern opacity-5"></div>
+          <div className="container mx-auto py-12 px-4 text-center relative">
+            <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent mb-4">
+              Checkout Seguro
+            </h1>
+            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+              Finalize sua compra com segurança e praticidade
+            </p>
+          </div>
+        </div>
+      )}
 
       <div className="container mx-auto py-8 px-4">
         <div className="max-w-6xl mx-auto">
@@ -295,9 +324,9 @@ export default function CheckoutPage() {
               <Card className="border-2 border-primary/20 shadow-lg">
                 <CardHeader className="text-center">
                   <CardTitle className="text-2xl font-bold">{product.name}</CardTitle>
-                  {product.image_url && (
+                  {(product.uploaded_image_url || product.image_url) && (
                     <img 
-                      src={product.image_url} 
+                      src={product.uploaded_image_url || product.image_url} 
                       alt={product.name}
                       className="w-full h-48 object-cover rounded-md mt-4"
                     />

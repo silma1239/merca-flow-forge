@@ -10,6 +10,8 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { Plus, Edit, Trash2, Package, DollarSign, Image, Link, Eye, EyeOff } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
+import { ImageUpload } from '@/components/ImageUpload';
+import { useAuth } from '@/hooks/useAuth';
 
 interface Product {
   id: string;
@@ -19,6 +21,8 @@ interface Product {
   image_url?: string;
   redirect_url: string;
   is_active: boolean;
+  banner_image_url?: string;
+  uploaded_image_url?: string;
   created_at: string;
   updated_at: string;
 }
@@ -29,6 +33,8 @@ interface ProductForm {
   price: string;
   image_url: string;
   redirect_url: string;
+  banner_image_url: string;
+  uploaded_image_url: string;
 }
 
 export default function ProductManagement() {
@@ -41,9 +47,12 @@ export default function ProductManagement() {
     description: '',
     price: '',
     image_url: '',
-    redirect_url: ''
+    redirect_url: '',
+    banner_image_url: '',
+    uploaded_image_url: ''
   });
   const { toast } = useToast();
+  const { userRole, loading: authLoading } = useAuth();
 
   useEffect(() => {
     loadProducts();
@@ -73,7 +82,9 @@ export default function ProductManagement() {
       description: '',
       price: '',
       image_url: '',
-      redirect_url: ''
+      redirect_url: '',
+      banner_image_url: '',
+      uploaded_image_url: ''
     });
     setEditingProduct(null);
   };
@@ -87,7 +98,9 @@ export default function ProductManagement() {
       description: formData.description,
       price: parseFloat(formData.price),
       image_url: formData.image_url || null,
-      redirect_url: formData.redirect_url
+      redirect_url: formData.redirect_url,
+      banner_image_url: formData.banner_image_url || null,
+      uploaded_image_url: formData.uploaded_image_url || null
     };
 
     try {
@@ -137,7 +150,9 @@ export default function ProductManagement() {
       description: product.description || '',
       price: product.price.toString(),
       image_url: product.image_url || '',
-      redirect_url: product.redirect_url || ''
+      redirect_url: product.redirect_url || '',
+      banner_image_url: product.banner_image_url || '',
+      uploaded_image_url: product.uploaded_image_url || ''
     });
     setIsDialogOpen(true);
   };
@@ -185,6 +200,29 @@ export default function ProductManagement() {
       loadProducts();
     }
   };
+
+  if (authLoading) {
+    return (
+      <div className="container mx-auto py-8">
+        <div className="text-center">
+          <h1 className="text-3xl font-bold mb-4">Carregando...</h1>
+        </div>
+      </div>
+    );
+  }
+
+  if (userRole?.role !== 'admin') {
+    return (
+      <div className="container mx-auto py-8">
+        <div className="text-center">
+          <h1 className="text-3xl font-bold mb-4 text-destructive">Acesso Negado</h1>
+          <p className="text-muted-foreground">
+            Você precisa ser administrador para acessar esta página.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   if (isLoading && products.length === 0) {
     return (
@@ -270,10 +308,26 @@ export default function ProductManagement() {
                 />
               </div>
               
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <ImageUpload
+                  bucket="banner-images"
+                  value={formData.banner_image_url}
+                  onChange={(url) => setFormData(prev => ({ ...prev, banner_image_url: url }))}
+                  label="Imagem Banner do Checkout"
+                />
+                
+                <ImageUpload
+                  bucket="product-images"
+                  value={formData.uploaded_image_url}
+                  onChange={(url) => setFormData(prev => ({ ...prev, uploaded_image_url: url }))}
+                  label="Imagem do Produto"
+                />
+              </div>
+              
               <div className="space-y-2">
                 <Label htmlFor="image_url" className="flex items-center gap-2">
                   <Image className="h-4 w-4" />
-                  URL da Imagem
+                  URL da Imagem (Opcional)
                 </Label>
                 <Input
                   id="image_url"
@@ -330,9 +384,9 @@ export default function ProductManagement() {
             </CardHeader>
             
             <CardContent>
-              {product.image_url && (
+              {(product.uploaded_image_url || product.image_url) && (
                 <img
-                  src={product.image_url}
+                  src={product.uploaded_image_url || product.image_url}
                   alt={product.name}
                   className="w-full h-32 object-cover rounded-md mb-3"
                   onError={(e) => {
