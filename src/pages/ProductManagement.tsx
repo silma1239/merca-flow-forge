@@ -13,6 +13,7 @@ import { Link as RouterLink } from 'react-router-dom';
 import { Switch } from '@/components/ui/switch';
 import { ImageUpload } from '@/components/ImageUpload';
 import { useAuth } from '@/hooks/useAuth';
+import { Checkbox } from '@/components/ui/checkbox';
 
 interface Product {
   id: string;
@@ -24,6 +25,7 @@ interface Product {
   is_active: boolean;
   banner_image_url?: string;
   uploaded_image_url?: string;
+  payment_methods?: string[];
   created_at: string;
   updated_at: string;
 }
@@ -36,6 +38,7 @@ interface ProductForm {
   redirect_url: string;
   banner_image_url: string;
   uploaded_image_url: string;
+  payment_methods: string[];
 }
 
 export default function ProductManagement() {
@@ -50,7 +53,8 @@ export default function ProductManagement() {
     image_url: '',
     redirect_url: '',
     banner_image_url: '',
-    uploaded_image_url: ''
+    uploaded_image_url: '',
+    payment_methods: ['pix', 'credit_card', 'boleto']
   });
   const { toast } = useToast();
   const { userRole, loading: authLoading } = useAuth();
@@ -72,7 +76,12 @@ export default function ProductManagement() {
         description: error.message
       });
     } else {
-      setProducts(data || []);
+      setProducts((data || []).map(product => ({
+        ...product,
+        payment_methods: Array.isArray(product.payment_methods) 
+          ? product.payment_methods as string[]
+          : ['pix', 'credit_card', 'boleto']
+      })));
     }
     setIsLoading(false);
   };
@@ -85,7 +94,8 @@ export default function ProductManagement() {
       image_url: '',
       redirect_url: '',
       banner_image_url: '',
-      uploaded_image_url: ''
+      uploaded_image_url: '',
+      payment_methods: ['pix', 'credit_card', 'boleto']
     });
     setEditingProduct(null);
   };
@@ -101,7 +111,8 @@ export default function ProductManagement() {
       image_url: formData.image_url || null,
       redirect_url: formData.redirect_url,
       banner_image_url: formData.banner_image_url || null,
-      uploaded_image_url: formData.uploaded_image_url || null
+      uploaded_image_url: formData.uploaded_image_url || null,
+      payment_methods: formData.payment_methods
     };
 
     try {
@@ -153,7 +164,8 @@ export default function ProductManagement() {
       image_url: product.image_url || '',
       redirect_url: product.redirect_url || '',
       banner_image_url: product.banner_image_url || '',
-      uploaded_image_url: product.uploaded_image_url || ''
+      uploaded_image_url: product.uploaded_image_url || '',
+      payment_methods: product.payment_methods || ['pix', 'credit_card', 'boleto']
     });
     setIsDialogOpen(true);
   };
@@ -360,6 +372,80 @@ export default function ProductManagement() {
                   placeholder="https://example.com/acesso-produto"
                   required
                 />
+              </div>
+
+              <div className="space-y-3">
+                <Label className="text-base font-semibold">Métodos de Pagamento</Label>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="pix"
+                      checked={formData.payment_methods.includes('pix')}
+                      onCheckedChange={(checked) => {
+                        if (checked) {
+                          setFormData(prev => ({
+                            ...prev,
+                            payment_methods: [...prev.payment_methods, 'pix']
+                          }));
+                        } else {
+                          setFormData(prev => ({
+                            ...prev,
+                            payment_methods: prev.payment_methods.filter(m => m !== 'pix')
+                          }));
+                        }
+                      }}
+                    />
+                    <Label htmlFor="pix" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                      PIX
+                    </Label>
+                  </div>
+
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="credit_card"
+                      checked={formData.payment_methods.includes('credit_card')}
+                      onCheckedChange={(checked) => {
+                        if (checked) {
+                          setFormData(prev => ({
+                            ...prev,
+                            payment_methods: [...prev.payment_methods, 'credit_card']
+                          }));
+                        } else {
+                          setFormData(prev => ({
+                            ...prev,
+                            payment_methods: prev.payment_methods.filter(m => m !== 'credit_card')
+                          }));
+                        }
+                      }}
+                    />
+                    <Label htmlFor="credit_card" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                      Cartão de Crédito
+                    </Label>
+                  </div>
+
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="boleto"
+                      checked={formData.payment_methods.includes('boleto')}
+                      onCheckedChange={(checked) => {
+                        if (checked) {
+                          setFormData(prev => ({
+                            ...prev,
+                            payment_methods: [...prev.payment_methods, 'boleto']
+                          }));
+                        } else {
+                          setFormData(prev => ({
+                            ...prev,
+                            payment_methods: prev.payment_methods.filter(m => m !== 'boleto')
+                          }));
+                        }
+                      }}
+                    />
+                    <Label htmlFor="boleto" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                      Boleto
+                    </Label>
+                  </div>
+                </div>
               </div>
 
               <div className="flex justify-end gap-3">

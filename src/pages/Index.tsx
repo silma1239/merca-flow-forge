@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';  
+import { Link, useNavigate } from 'react-router-dom';  
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/hooks/useAuth';
-import { ShoppingCart, CreditCard, Zap, Shield, Star, ArrowRight, CheckCircle, Package, LogIn, Settings, LogOut } from 'lucide-react';
+import { ShoppingCart, CreditCard, Zap, Shield, Star, ArrowRight, CheckCircle, Package, LogIn, Settings, LogOut, BarChart3, Tag } from 'lucide-react';
 
 interface Product {
   id: string;
@@ -21,6 +21,7 @@ const Index = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { user, userRole, signOut } = useAuth();
+  const navigate = useNavigate();
 
   useEffect(() => {
     loadProducts();
@@ -98,6 +99,80 @@ const Index = () => {
           </div>
         </div>
       </header>
+
+      {/* Menu Principal Admin */}
+      {user && userRole?.role === 'admin' && (
+        <section className="py-12 px-4 bg-gradient-to-br from-muted/30 to-background">
+          <div className="container mx-auto">
+            <div className="text-center mb-8">
+              <h2 className="text-3xl font-bold mb-4 bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
+                Painel Administrativo
+              </h2>
+              <p className="text-muted-foreground max-w-2xl mx-auto">
+                Gerencie todos os aspectos do seu sistema de vendas
+              </p>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <div className="menu-button group cursor-pointer" onClick={() => navigate('/dashboard')}>
+                <div className="relative z-10">
+                  <div className="menu-icon">
+                    <BarChart3 className="h-8 w-8" />
+                  </div>
+                  <h3 className="text-xl font-bold text-foreground mb-2 group-hover:text-primary transition-colors">
+                    Dashboard
+                  </h3>
+                  <p className="text-muted-foreground text-sm group-hover:text-foreground/80 transition-colors">
+                    Visão geral completa do sistema e métricas
+                  </p>
+                </div>
+              </div>
+              
+              <div className="menu-button group cursor-pointer" onClick={() => navigate('/products')}>
+                <div className="relative z-10">
+                  <div className="menu-icon">
+                    <Package className="h-8 w-8" />
+                  </div>
+                  <h3 className="text-xl font-bold text-foreground mb-2 group-hover:text-primary transition-colors">
+                    Produtos
+                  </h3>
+                  <p className="text-muted-foreground text-sm group-hover:text-foreground/80 transition-colors">
+                    Criar e gerenciar produtos para venda
+                  </p>
+                </div>
+              </div>
+              
+              <div className="menu-button group cursor-pointer" onClick={() => navigate('/orders')}>
+                <div className="relative z-10">
+                  <div className="menu-icon">
+                    <ShoppingCart className="h-8 w-8" />
+                  </div>
+                  <h3 className="text-xl font-bold text-foreground mb-2 group-hover:text-primary transition-colors">
+                    Pedidos
+                  </h3>
+                  <p className="text-muted-foreground text-sm group-hover:text-foreground/80 transition-colors">
+                    Acompanhar vendas e pagamentos
+                  </p>
+                </div>
+              </div>
+              
+              <div className="menu-button group cursor-pointer" onClick={() => navigate('/coupons')}>
+                <div className="relative z-10">
+                  <div className="menu-icon">
+                    <Tag className="h-8 w-8" />
+                  </div>
+                  <h3 className="text-xl font-bold text-foreground mb-2 group-hover:text-primary transition-colors">
+                    Cupons
+                  </h3>
+                  <p className="text-muted-foreground text-sm group-hover:text-foreground/80 transition-colors">
+                    Criar promoções e descontos
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Features Section */}
       <section className="py-16 px-4 bg-muted/30">
