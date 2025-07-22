@@ -19,7 +19,7 @@ interface TransparentPaymentRequest {
   subtotal: number;
   discount: number;
   total: number;
-  paymentMethod: 'pix' | 'credit_card' | 'debit_card';
+  paymentMethod: 'pix' | 'credit_card' | 'boleto';
   cardData?: {
     token: string;
     installments: number;
@@ -102,10 +102,14 @@ serve(async (req) => {
     // Configure payment method
     if (paymentData.paymentMethod === 'pix') {
       paymentPayload.payment_method_id = 'pix';
-    } else if (paymentData.paymentMethod === 'credit_card' && paymentData.cardData) {
-      paymentPayload.payment_method_id = 'visa'; // This should be detected from card
-      paymentPayload.token = paymentData.cardData.token;
-      paymentPayload.installments = paymentData.cardData.installments;
+    } else if (paymentData.paymentMethod === 'credit_card') {
+      paymentPayload.payment_method_id = 'visa'; // Will be updated based on card
+      paymentPayload.installments = paymentData.cardData?.installments || 1;
+      // For transparent checkout, we'll need card token from frontend
+      // For now, this will create a pending payment that requires card processing
+    } else if (paymentData.paymentMethod === 'boleto') {
+      paymentPayload.payment_method_id = 'bolbradesco';
+      paymentPayload.date_of_expiration = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]; // 3 days
     }
 
     console.log("Creating transparent payment:", paymentPayload);
@@ -158,14 +162,30 @@ serve(async (req) => {
       paymentMethod: paymentData.paymentMethod
     };
 
-    // For PIX, include QR code and copy-paste code
+    // Include payment method specific data
     if (paymentData.paymentMethod === 'pix') {
       response.pix = {
         qr_code: paymentResult.point_of_interaction?.transaction_data?.qr_code,
         qr_code_base64: paymentResult.point_of_interaction?.transaction_data?.qr_code_base64,
         ticket_url: paymentResult.point_of_interaction?.transaction_data?.ticket_url
       };
+    } else if (paymentData.paymentMethod === 'boleto') {
+      response.boleto = {
+        pdf_url: paymentResult.transaction_details?.external_resource_url,
+        barcode: paymentResult.barcode?.content
+      };
     }
+
+    // Log payment creation
+    await supabaseService
+      .from('payment_notifications')
+      .insert({
+        order_id: order.id,
+        payment_id: paymentResult.id,
+        event_type: 'payment_created',
+        status: paymentResult.status,
+        data: paymentResult
+      });
 
     return new Response(
       JSON.stringify(response),

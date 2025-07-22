@@ -241,6 +241,36 @@ export type Database = {
           },
         ]
       }
+      payment_notifications: {
+        Row: {
+          created_at: string
+          data: Json | null
+          event_type: string
+          id: string
+          order_id: string
+          payment_id: string | null
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          data?: Json | null
+          event_type: string
+          id?: string
+          order_id: string
+          payment_id?: string | null
+          status: string
+        }
+        Update: {
+          created_at?: string
+          data?: Json | null
+          event_type?: string
+          id?: string
+          order_id?: string
+          payment_id?: string | null
+          status?: string
+        }
+        Relationships: []
+      }
       products: {
         Row: {
           banner_image_url: string | null
@@ -250,6 +280,7 @@ export type Database = {
           image_url: string | null
           is_active: boolean | null
           name: string
+          payment_methods: Json | null
           price: number
           redirect_url: string | null
           updated_at: string
@@ -263,6 +294,7 @@ export type Database = {
           image_url?: string | null
           is_active?: boolean | null
           name: string
+          payment_methods?: Json | null
           price: number
           redirect_url?: string | null
           updated_at?: string
@@ -276,6 +308,7 @@ export type Database = {
           image_url?: string | null
           is_active?: boolean | null
           name?: string
+          payment_methods?: Json | null
           price?: number
           redirect_url?: string | null
           updated_at?: string

@@ -18,29 +18,38 @@ All colors MUST be HSL.
     --popover: 0 0% 100%;
     --popover-foreground: 218 27% 17%;
 
-    /* Primary: Trust-building blue */
-    --primary: 243 75% 59%;
+    /* Primary: Modern payment blue with gradient support */
+    --primary: 220 91% 56%;
     --primary-foreground: 0 0% 100%;
-    --primary-glow: 243 100% 82%;
+    --primary-glow: 220 100% 80%;
+    --primary-hover: 220 91% 50%;
 
-    /* Secondary: Soft accent */
-    --secondary: 240 5% 96%;
-    --secondary-foreground: 218 27% 17%;
+    /* Secondary: Premium gray with depth */
+    --secondary: 240 9% 93%;
+    --secondary-foreground: 220 13% 18%;
+    --secondary-hover: 240 9% 88%;
 
     --muted: 240 5% 96%;
-    --muted-foreground: 218 11% 65%;
+    --muted-foreground: 220 9% 46%;
 
-    /* Accent: Success green for confirmations */
-    --accent: 142 76% 73%;
-    --accent-foreground: 218 27% 17%;
+    /* Accent: Professional teal for highlights */
+    --accent: 180 84% 60%;
+    --accent-foreground: 220 13% 18%;
 
-    /* Success color for payments */
+    /* Success: Rich green for confirmations */
     --success: 142 76% 36%;
     --success-foreground: 0 0% 100%;
+    --success-light: 142 76% 90%;
 
-    /* Warning for pending states */
-    --warning: 38 92% 50%;
+    /* Warning: Amber for pending states */
+    --warning: 45 93% 47%;
     --warning-foreground: 0 0% 100%;
+    --warning-light: 45 93% 90%;
+
+    /* Payment method specific colors */
+    --pix: 220 91% 56%;
+    --credit-card: 280 100% 70%;
+    --boleto: 15 86% 53%;
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
@@ -51,15 +60,20 @@ All colors MUST be HSL.
 
     --radius: 0.5rem;
 
-    /* Gradients for modern payment UI */
-    --gradient-primary: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-glow)));
-    --gradient-success: linear-gradient(135deg, hsl(var(--success)), hsl(var(--accent)));
+    /* Premium gradients for modern payment UI */
+    --gradient-primary: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--primary-hover)) 50%, hsl(var(--primary-glow)) 100%);
+    --gradient-success: linear-gradient(135deg, hsl(var(--success)) 0%, hsl(var(--accent)) 100%);
     --gradient-card: linear-gradient(135deg, hsl(var(--card)) 0%, hsl(240 5% 98%) 100%);
+    --gradient-pix: linear-gradient(135deg, hsl(var(--pix)) 0%, hsl(var(--primary-glow)) 100%);
+    --gradient-credit: linear-gradient(135deg, hsl(var(--credit-card)) 0%, hsl(280 100% 85%) 100%);
+    --gradient-boleto: linear-gradient(135deg, hsl(var(--boleto)) 0%, hsl(25 100% 70%) 100%);
     
-    /* Shadows for depth */
-    --shadow-elegant: 0 10px 30px -10px hsl(var(--primary) / 0.1);
-    --shadow-glow: 0 0 40px hsl(var(--primary-glow) / 0.3);
-    --shadow-success: 0 4px 20px hsl(var(--success) / 0.3);
+    /* Enhanced shadows for depth and premium feel */
+    --shadow-elegant: 0 20px 40px -10px hsl(var(--primary) / 0.15);
+    --shadow-glow: 0 0 60px hsl(var(--primary-glow) / 0.4);
+    --shadow-success: 0 8px 25px hsl(var(--success) / 0.25);
+    --shadow-payment: 0 10px 30px -5px hsl(var(--primary) / 0.2);
+    --shadow-card: 0 4px 20px hsl(220 13% 18% / 0.08);
     
     /* Animations */
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);

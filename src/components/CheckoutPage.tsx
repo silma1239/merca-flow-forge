@@ -21,6 +21,7 @@ interface Product {
   banner_image_url?: string;
   uploaded_image_url?: string;
   redirect_url: string;
+  payment_methods?: string[];
 }
 
 interface OrderBump {
@@ -55,9 +56,90 @@ export default function CheckoutPage() {
   const [subtotal, setSubtotal] = useState(0);
   const [discount, setDiscount] = useState(0);
   const [paymentResult, setPaymentResult] = useState<any>(null);
+  const [orderStatus, setOrderStatus] = useState<string>('');
   const [currentStep, setCurrentStep] = useState<'form' | 'payment'>('form');
   const [bannerImage, setBannerImage] = useState<string | null>(null);
   const { toast } = useToast();
+
+  // Real-time payment status monitoring
+  useEffect(() => {
+    if (!paymentResult?.orderId) return;
+
+    console.log('Setting up real-time monitoring for order:', paymentResult.orderId);
+
+    // Listen for order status changes
+    const orderChannel = supabase
+      .channel('order-status')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'orders',
+          filter: `id=eq.${paymentResult.orderId}`
+        },
+        (payload) => {
+          console.log('Order status updated:', payload);
+          const newStatus = payload.new.payment_status;
+          setOrderStatus(newStatus);
+          
+          if (newStatus === 'approved') {
+            toast({
+              title: "Pagamento Aprovado!",
+              description: "Redirecionando para seu produto...",
+            });
+            
+            // Redirect to product or success page
+            setTimeout(() => {
+              if (product?.redirect_url) {
+                window.open(product.redirect_url, '_blank');
+              }
+              window.location.href = `/payment-success?order=${paymentResult.orderId}&product=${product?.id}`;
+            }, 2000);
+          } else if (newStatus === 'failed' || newStatus === 'rejected') {
+            toast({
+              title: "Pagamento Recusado",
+              description: "Tente novamente ou escolha outro método.",
+              variant: "destructive"
+            });
+            
+            setTimeout(() => {
+              window.location.href = `/payment-failure?order=${paymentResult.orderId}`;
+            }, 2000);
+          }
+        }
+      )
+      .subscribe();
+
+    // Listen for payment notifications
+    const notificationChannel = supabase
+      .channel('payment-notifications')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'payment_notifications',
+          filter: `order_id=eq.${paymentResult.orderId}`
+        },
+        (payload) => {
+          console.log('Payment notification received:', payload);
+          const notification = payload.new;
+          
+          if (notification.status === 'approved') {
+            setOrderStatus('approved');
+          } else if (notification.status === 'rejected' || notification.status === 'failed') {
+            setOrderStatus('failed');
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(orderChannel);
+      supabase.removeChannel(notificationChannel);
+    };
+  }, [paymentResult?.orderId, product?.redirect_url, product?.id, toast]);
 
   // Monitor payment status in real-time
   const monitorPaymentStatus = (orderId: string, paymentId: string) => {
@@ -121,7 +203,12 @@ export default function CheckoutPage() {
         description: "O produto solicitado não pôde ser carregado."
       });
     } else {
-      setProduct(data);
+      setProduct({
+        ...data,
+        payment_methods: Array.isArray(data.payment_methods) 
+          ? (data.payment_methods as string[])
+          : ['pix', 'credit_card', 'boleto']
+      });
       if (data.banner_image_url) {
         setBannerImage(data.banner_image_url);
       }
@@ -249,9 +336,21 @@ export default function CheckoutPage() {
       return;
     }
 
+    // Validate document for non-PIX payments
+    if (method !== 'pix' && !data?.document) {
+      toast({
+        title: "CPF/CNPJ obrigatório",
+        description: "Por favor, informe seu CPF ou CNPJ.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setIsLoading(true);
 
     try {
+      console.log('Creating payment with method:', method, 'data:', data);
+      
       const { data: result, error } = await supabase.functions.invoke('create-transparent-payment', {
         body: {
           productId: product.id,
@@ -262,29 +361,38 @@ export default function CheckoutPage() {
           discount,
           total: subtotal - discount,
           paymentMethod: method,
-          cardData: data?.cardData
+          ...(method === 'credit_card' && { 
+            cardData: { 
+              installments: data?.installments || 1 
+            } 
+          })
         }
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Payment creation error:', error);
+        throw error;
+      }
 
+      console.log('Payment created successfully:', result);
       setPaymentResult(result);
       setCurrentStep('payment');
       
       toast({
         title: "Pagamento criado!",
-        description: method === 'pix' ? "QR Code PIX gerado com sucesso" : "Pagamento processado"
+        description: method === 'pix' ? 
+          "QR Code gerado. Complete o pagamento para liberar seu acesso." :
+          method === 'credit_card' ?
+          "Processando seu cartão de crédito..." :
+          "Boleto gerado. Pague até o vencimento.",
       });
 
-      // Set up real-time payment status monitoring
-      if (result.paymentId) {
-        monitorPaymentStatus(result.orderId, result.paymentId);
-      }
-    } catch (error) {
+    } catch (error: any) {
+      console.error('Payment error:', error);
       toast({
         variant: "destructive",
-        title: "Erro no checkout",
-        description: "Houve um problema ao processar seu pedido. Tente novamente."
+        title: "Erro no pagamento",
+        description: error.message || "Ocorreu um erro ao processar o pagamento"
       });
     } finally {
       setIsLoading(false);
@@ -542,6 +650,7 @@ export default function CheckoutPage() {
                     total={subtotal - discount}
                     onPaymentSubmit={handlePaymentSubmit}
                     isLoading={isLoading}
+                    paymentMethods={product?.payment_methods || ['pix', 'credit_card', 'boleto']}
                   />
                 </>
               ) : (
@@ -550,6 +659,7 @@ export default function CheckoutPage() {
                   onPaymentSubmit={handlePaymentSubmit}
                   isLoading={isLoading}
                   paymentResult={paymentResult}
+                  paymentMethods={product?.payment_methods || ['pix', 'credit_card', 'boleto']}
                 />
               )}
             </div>

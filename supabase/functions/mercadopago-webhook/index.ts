@@ -105,6 +105,21 @@ serve(async (req) => {
         raw_data: paymentDetails
       });
 
+    // Create real-time notification
+    await supabaseService
+      .from('payment_notifications')
+      .insert({
+        order_id: order.id,
+        payment_id: paymentId.toString(),
+        event_type: 'webhook_received',
+        status: newStatus,
+        data: {
+          webhook_data: webhookData,
+          payment_details: paymentDetails,
+          timestamp: new Date().toISOString()
+        }
+      });
+
     console.log(`Order ${order.id} updated with status ${newStatus}`);
 
     // If payment was approved, trigger any post-payment actions
