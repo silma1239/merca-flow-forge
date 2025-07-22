@@ -5,7 +5,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Calendar, Search, Eye, Mail, Phone, Package } from 'lucide-react';
+import { Calendar, Search, Eye, Mail, Phone, Package, ArrowLeft } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 
 interface Order {
@@ -43,6 +44,27 @@ export default function Orders() {
 
   useEffect(() => {
     loadOrders();
+    
+    // Set up real-time subscription for orders
+    const channel = supabase
+      .channel('orders-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'orders'
+        },
+        () => {
+          console.log('Orders updated, reloading...');
+          loadOrders();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   useEffect(() => {
@@ -117,7 +139,15 @@ export default function Orders() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 p-8">
       <div className="max-w-7xl mx-auto space-y-8">
-        <h1 className="text-4xl font-bold">Gestão de Pedidos</h1>
+        <div className="flex items-center gap-4">
+          <Link to="/">
+            <Button variant="outline" size="sm">
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Voltar
+            </Button>
+          </Link>
+          <h1 className="text-4xl font-bold">Gestão de Pedidos</h1>
+        </div>
 
         {/* Filters */}
         <Card>

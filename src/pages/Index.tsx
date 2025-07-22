@@ -58,20 +58,32 @@ const Index = () => {
             <nav className="flex items-center space-x-6">
               {user ? (
                 <>
-                  <span className="text-sm text-muted-foreground">
+                  <span className="text-sm text-muted-foreground hidden md:block">
                     Olá, {user.email}
                   </span>
                   {userRole?.role === 'admin' && (
                     <>
                       <Link to="/dashboard" className="text-muted-foreground hover:text-foreground transition-colors">
                         <Settings className="h-4 w-4 inline mr-1" />
-                        Admin
+                        <span className="hidden sm:inline">Dashboard</span>
+                      </Link>
+                      <Link to="/products" className="text-muted-foreground hover:text-foreground transition-colors">
+                        <Package className="h-4 w-4 inline mr-1" />
+                        <span className="hidden sm:inline">Produtos</span>
+                      </Link>
+                      <Link to="/orders" className="text-muted-foreground hover:text-foreground transition-colors">
+                        <ShoppingCart className="h-4 w-4 inline mr-1" />
+                        <span className="hidden sm:inline">Pedidos</span>
+                      </Link>
+                      <Link to="/coupons" className="text-muted-foreground hover:text-foreground transition-colors">
+                        <Star className="h-4 w-4 inline mr-1" />
+                        <span className="hidden sm:inline">Cupons</span>
                       </Link>
                     </>
                   )}
                   <Button variant="outline" size="sm" onClick={() => signOut()}>
                     <LogOut className="h-4 w-4 mr-2" />
-                    Sair
+                    <span className="hidden sm:inline">Sair</span>
                   </Button>
                 </>
               ) : (

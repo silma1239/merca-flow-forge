@@ -93,7 +93,7 @@ serve(async (req) => {
           number: paymentData.customerInfo.document
         } : undefined
       },
-      notification_url: `${req.headers.get('origin')}/api/webhook`,
+      notification_url: `https://ohttikmdrihmjtzmgwie.supabase.co/functions/v1/mercadopago-webhook`,
       metadata: {
         order_id: order.id
       }

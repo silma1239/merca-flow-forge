@@ -7,7 +7,8 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { CheckCircle, Tag, Shield, Star } from 'lucide-react';
+import { CheckCircle, Tag, Shield, Star, ArrowLeft } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import PaymentMethods from './PaymentMethods';
 
@@ -57,6 +58,40 @@ export default function CheckoutPage() {
   const [currentStep, setCurrentStep] = useState<'form' | 'payment'>('form');
   const [bannerImage, setBannerImage] = useState<string | null>(null);
   const { toast } = useToast();
+
+  // Monitor payment status in real-time
+  const monitorPaymentStatus = (orderId: string, paymentId: string) => {
+    // Set up realtime subscription for order status changes
+    const channel = supabase
+      .channel('order-status-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'orders',
+          filter: `id=eq.${orderId}`
+        },
+        (payload) => {
+          console.log('Order status updated:', payload);
+          const newOrder = payload.new;
+          
+          if (newOrder.payment_status === 'approved') {
+            // Payment approved - redirect to success page
+            window.location.href = `/payment-success?order=${orderId}&payment_id=${paymentId}`;
+          } else if (newOrder.payment_status === 'failed') {
+            // Payment failed - redirect to failure page
+            window.location.href = `/payment-failure?order=${orderId}`;
+          }
+        }
+      )
+      .subscribe();
+
+    // Clean up subscription after 10 minutes
+    setTimeout(() => {
+      supabase.removeChannel(channel);
+    }, 600000);
+  };
 
   const productId = searchParams.get('product');
 
@@ -240,6 +275,11 @@ export default function CheckoutPage() {
         title: "Pagamento criado!",
         description: method === 'pix' ? "QR Code PIX gerado com sucesso" : "Pagamento processado"
       });
+
+      // Set up real-time payment status monitoring
+      if (result.paymentId) {
+        monitorPaymentStatus(result.orderId, result.paymentId);
+      }
     } catch (error) {
       toast({
         variant: "destructive",
@@ -264,6 +304,23 @@ export default function CheckoutPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
+      {/* Header with back button */}
+      <header className="bg-background/80 backdrop-blur-sm border-b sticky top-0 z-50">
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex items-center justify-between">
+            <Link to="/">
+              <Button variant="outline" size="sm">
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Voltar à Loja
+              </Button>
+            </Link>
+            <div className="flex items-center space-x-2">
+              <Shield className="h-5 w-5 text-success" />
+              <span className="text-sm font-medium">Checkout Seguro</span>
+            </div>
+          </div>
+        </div>
+      </header>
       {/* Banner Hero */}
       {bannerImage && (
         <div className="relative h-64 md:h-80 overflow-hidden">

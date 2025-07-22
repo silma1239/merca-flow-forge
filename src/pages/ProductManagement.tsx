@@ -8,7 +8,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Edit, Trash2, Package, DollarSign, Image, Link, Eye, EyeOff } from 'lucide-react';
+import { Plus, Edit, Trash2, Package, DollarSign, Image, Link, Eye, EyeOff, ArrowLeft } from 'lucide-react';
+import { Link as RouterLink } from 'react-router-dom';
 import { Switch } from '@/components/ui/switch';
 import { ImageUpload } from '@/components/ImageUpload';
 import { useAuth } from '@/hooks/useAuth';
@@ -237,13 +238,21 @@ export default function ProductManagement() {
   return (
     <div className="container mx-auto py-8 px-4">
       <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
-            Gerenciar Produtos
-          </h1>
-          <p className="text-muted-foreground mt-2">
-            Crie e gerencie seus produtos para vendas
-          </p>
+        <div className="flex items-center gap-4">
+          <RouterLink to="/">
+            <Button variant="outline" size="sm">
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Voltar
+            </Button>
+          </RouterLink>
+          <div>
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
+              Gerenciar Produtos
+            </h1>
+            <p className="text-muted-foreground mt-2">
+              Crie e gerencie seus produtos para vendas
+            </p>
+          </div>
         </div>
         
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
