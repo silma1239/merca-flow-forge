@@ -16,7 +16,7 @@ type ThemeProviderState = {
 };
 
 const initialState: ThemeProviderState = {
-  theme: "system",
+  theme: "light",
   setTheme: () => null,
 };
 
@@ -24,20 +24,20 @@ const ThemeProviderContext = createContext<ThemeProviderState>(initialState);
 
 export function ThemeProvider({
   children,
-  defaultTheme = "system",
+  defaultTheme = "light",
   storageKey = "vite-ui-theme",
   ...props
 }: ThemeProviderProps) {
-  const [theme, setThemeState] = useState<Theme>(
-    () => (localStorage.getItem(storageKey) as Theme) || defaultTheme
-  );
-  const [isLoaded, setIsLoaded] = useState(false);
+  const [theme, setThemeState] = useState<Theme>(() => {
+    const stored = localStorage.getItem(storageKey) as Theme;
+    return stored || defaultTheme;
+  });
+  const [isInitialized, setIsInitialized] = useState(false);
   const { user } = useAuth();
 
-  // Apply theme to DOM
+  // Apply theme to DOM immediately
   useEffect(() => {
     const root = window.document.documentElement;
-
     root.classList.remove("light", "dark");
 
     if (theme === "system") {
@@ -45,55 +45,91 @@ export function ThemeProvider({
         .matches
         ? "dark"
         : "light";
-
       root.classList.add(systemTheme);
-      return;
+    } else {
+      root.classList.add(theme);
     }
-
-    root.classList.add(theme);
   }, [theme]);
 
-  // Load theme from database only once when user logs in
+  // Initialize theme from database when user logs in
   useEffect(() => {
-    if (user && !isLoaded) {
+    if (user && !isInitialized) {
       const loadUserTheme = async () => {
-        const { data } = await supabase
-          .from('user_preferences')
-          .select('theme')
-          .eq('user_id', user.id)
-          .single();
-        
-        if (data?.theme && data.theme !== theme) {
-          setThemeState(data.theme as Theme);
-          localStorage.setItem(storageKey, data.theme);
+        try {
+          const { data } = await supabase
+            .from('user_preferences')
+            .select('theme')
+            .eq('user_id', user.id)
+            .single();
+          
+          if (data?.theme) {
+            const dbTheme = data.theme as Theme;
+            setThemeState(dbTheme);
+            localStorage.setItem(storageKey, dbTheme);
+          }
+        } catch (error) {
+          console.log('No theme preference found, using current theme');
         }
-        setIsLoaded(true);
+        setIsInitialized(true);
       };
       loadUserTheme();
     } else if (!user) {
-      setIsLoaded(false);
+      setIsInitialized(false);
     }
-  }, [user, isLoaded, storageKey, theme]);
+  }, [user, isInitialized, storageKey]);
 
-  const value = {
-    theme,
-    setTheme: (newTheme: Theme) => {
-      setThemeState(newTheme);
-      localStorage.setItem(storageKey, newTheme);
-      
-      // Save to database if user is logged in
-      if (user) {
-        supabase
+  // Set up realtime subscription for theme changes
+  useEffect(() => {
+    if (!user) return;
+
+    const channel = supabase
+      .channel('theme-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'user_preferences',
+          filter: `user_id=eq.${user.id}`
+        },
+        (payload) => {
+          if (payload.new && 'theme' in payload.new) {
+            const newTheme = payload.new.theme as Theme;
+            setThemeState(newTheme);
+            localStorage.setItem(storageKey, newTheme);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user, storageKey]);
+
+  const setTheme = async (newTheme: Theme) => {
+    setThemeState(newTheme);
+    localStorage.setItem(storageKey, newTheme);
+    
+    // Save to database if user is logged in
+    if (user) {
+      try {
+        await supabase
           .from('user_preferences')
           .upsert({ 
             user_id: user.id, 
             theme: newTheme 
-          })
-          .then(() => {
-            console.log('Theme preference saved');
           });
+        console.log('Theme preference saved');
+      } catch (error) {
+        console.error('Error saving theme preference:', error);
       }
-    },
+    }
+  };
+
+  const value = {
+    theme,
+    setTheme,
   };
 
   return (
