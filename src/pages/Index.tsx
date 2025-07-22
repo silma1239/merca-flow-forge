@@ -128,7 +128,7 @@ const Index = () => {
                 </div>
               </div>
               
-              <div className="menu-button group cursor-pointer" onClick={() => navigate('/products')}>
+              <div className="menu-button group cursor-pointer" onClick={() => navigate('/product-management')}>
                 <div className="relative z-10">
                   <div className="menu-icon">
                     <Package className="h-8 w-8" />
@@ -329,7 +329,7 @@ const Index = () => {
               </Link>
             ) : userRole?.role === 'admin' && (
               <>
-                <Link to="/products">
+                <Link to="/product-management">
                   <Button size="lg" variant="outline" className="border-primary-foreground text-primary-foreground hover:bg-primary-foreground/10">
                     Gerenciar Produtos
                     <ArrowRight className="w-4 h-4 ml-2" />

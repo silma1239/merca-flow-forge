@@ -37,6 +37,15 @@ export default function PaymentMethods({
   const [selectedMethod, setSelectedMethod] = useState<'pix' | 'credit_card' | 'boleto'>('pix');
   const [customerDocument, setCustomerDocument] = useState('');
   const [installments, setInstallments] = useState(1);
+  
+  // Credit card form state
+  const [cardData, setCardData] = useState({
+    number: '',
+    name: '',
+    expiryDate: '',
+    cvv: ''
+  });
+  
   const { toast } = useToast();
 
   const copyToClipboard = (text: string) => {
@@ -50,9 +59,39 @@ export default function PaymentMethods({
   const handlePayment = () => {
     const paymentData = {
       document: customerDocument,
-      ...(selectedMethod === 'credit_card' && { installments })
+      ...(selectedMethod === 'credit_card' && { 
+        installments,
+        cardData: {
+          ...cardData,
+          expiryMonth: cardData.expiryDate.split('/')[0],
+          expiryYear: cardData.expiryDate.split('/')[1]
+        }
+      })
     };
     onPaymentSubmit(selectedMethod, paymentData);
+  };
+
+  const formatCardNumber = (value: string) => {
+    const v = value.replace(/\s+/g, '').replace(/[^0-9]/gi, '');
+    const matches = v.match(/\d{4,16}/g);
+    const match = matches && matches[0] || '';
+    const parts = [];
+    for (let i = 0, len = match.length; i < len; i += 4) {
+      parts.push(match.substring(i, i + 4));
+    }
+    if (parts.length) {
+      return parts.join(' ');
+    } else {
+      return v;
+    }
+  };
+
+  const formatExpiryDate = (value: string) => {
+    const v = value.replace(/\s+/g, '').replace(/[^0-9]/gi, '');
+    if (v.length >= 2) {
+      return v.substring(0, 2) + '/' + v.substring(2, 4);
+    }
+    return v;
   };
 
   // Payment method configurations
@@ -297,22 +336,79 @@ export default function PaymentMethods({
             </p>
           </div>
 
-          {/* Credit Card Installments */}
+          {/* Credit Card Form */}
           {selectedMethod === 'credit_card' && (
-            <div className="space-y-2">
-              <Label htmlFor="installments">Parcelas</Label>
-              <select
-                id="installments"
-                value={installments}
-                onChange={(e) => setInstallments(Number(e.target.value))}
-                className="w-full p-2 border border-primary/20 rounded-md bg-muted/30 focus:border-primary"
-              >
-                {[1,2,3,4,5,6,7,8,9,10,11,12].map(num => (
-                  <option key={num} value={num}>
-                    {num}x de R$ {(total / num).toFixed(2)} {num === 1 ? 'à vista' : 'sem juros'}
-                  </option>
-                ))}
-              </select>
+            <div className="space-y-4 p-4 bg-gradient-to-r from-credit-card/5 to-purple-50 rounded-xl border border-credit-card/20">
+              <h4 className="font-medium text-credit-card flex items-center gap-2">
+                <CreditCard className="h-4 w-4" />
+                Dados do Cartão
+              </h4>
+              
+              <div className="grid grid-cols-1 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="cardNumber">Número do Cartão</Label>
+                  <Input
+                    id="cardNumber"
+                    value={cardData.number}
+                    onChange={(e) => setCardData({...cardData, number: formatCardNumber(e.target.value)})}
+                    placeholder="0000 0000 0000 0000"
+                    maxLength={19}
+                    className="bg-white/80 border-credit-card/30 focus:border-credit-card"
+                  />
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="expiryDate">Validade</Label>
+                    <Input
+                      id="expiryDate"
+                      value={cardData.expiryDate}
+                      onChange={(e) => setCardData({...cardData, expiryDate: formatExpiryDate(e.target.value)})}
+                      placeholder="MM/AA"
+                      maxLength={5}
+                      className="bg-white/80 border-credit-card/30 focus:border-credit-card"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="cvv">CVV</Label>
+                    <Input
+                      id="cvv"
+                      value={cardData.cvv}
+                      onChange={(e) => setCardData({...cardData, cvv: e.target.value.replace(/[^0-9]/g, '')})}
+                      placeholder="123"
+                      maxLength={4}
+                      className="bg-white/80 border-credit-card/30 focus:border-credit-card"
+                    />
+                  </div>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="cardName">Nome no Cartão</Label>
+                  <Input
+                    id="cardName"
+                    value={cardData.name}
+                    onChange={(e) => setCardData({...cardData, name: e.target.value.toUpperCase()})}
+                    placeholder="Nome como impresso no cartão"
+                    className="bg-white/80 border-credit-card/30 focus:border-credit-card"
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="installments">Parcelas</Label>
+                  <select
+                    id="installments"
+                    value={installments}
+                    onChange={(e) => setInstallments(Number(e.target.value))}
+                    className="w-full p-2 border border-credit-card/30 rounded-md bg-white/80 focus:border-credit-card"
+                  >
+                    {[1,2,3,4,5,6,7,8,9,10,11,12].map(num => (
+                      <option key={num} value={num}>
+                        {num}x de R$ {(total / num).toFixed(2)} {num === 1 ? 'à vista' : 'sem juros'}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
             </div>
           )}
 
@@ -351,7 +447,8 @@ export default function PaymentMethods({
 
           <Button 
             onClick={handlePayment}
-            disabled={isLoading || (selectedMethod !== 'pix' && !customerDocument)}
+            disabled={isLoading || (selectedMethod !== 'pix' && !customerDocument) || 
+              (selectedMethod === 'credit_card' && (!cardData.number || !cardData.name || !cardData.expiryDate || !cardData.cvv))}
             className={`
               w-full text-lg py-6 font-semibold transition-all duration-300
               bg-gradient-to-r from-primary to-primary-hover 

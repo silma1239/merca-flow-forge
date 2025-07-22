@@ -21,9 +21,14 @@ interface TransparentPaymentRequest {
   total: number;
   paymentMethod: 'pix' | 'credit_card' | 'boleto';
   cardData?: {
-    token: string;
-    installments: number;
+    number: string;
+    name: string;
+    expiryMonth: string;
+    expiryYear: string;
+    cvv: string;
   };
+  installments?: number;
+  document?: string;
 }
 
 serve(async (req) => {
@@ -103,10 +108,34 @@ serve(async (req) => {
     if (paymentData.paymentMethod === 'pix') {
       paymentPayload.payment_method_id = 'pix';
     } else if (paymentData.paymentMethod === 'credit_card') {
-      paymentPayload.payment_method_id = 'visa'; // Will be updated based on card
-      paymentPayload.installments = paymentData.cardData?.installments || 1;
-      // For transparent checkout, we'll need card token from frontend
-      // For now, this will create a pending payment that requires card processing
+      // For credit card, we need to detect the card brand and configure accordingly
+      const cardNumber = paymentData.cardData?.number?.replace(/\s/g, '') || '';
+      let paymentMethodId = 'visa'; // default
+      
+      if (cardNumber.startsWith('4')) paymentMethodId = 'visa';
+      else if (cardNumber.startsWith('5') || cardNumber.startsWith('2')) paymentMethodId = 'master';
+      else if (cardNumber.startsWith('3')) paymentMethodId = 'amex';
+      else if (cardNumber.startsWith('6')) paymentMethodId = 'elo';
+      
+      paymentPayload.payment_method_id = paymentMethodId;
+      paymentPayload.installments = paymentData.installments || 1;
+      
+      // Add card information for transparent checkout
+      if (paymentData.cardData) {
+        paymentPayload.card = {
+          number: cardNumber,
+          security_code: paymentData.cardData.cvv,
+          expiration_month: parseInt(paymentData.cardData.expiryMonth),
+          expiration_year: parseInt('20' + paymentData.cardData.expiryYear),
+          cardholder: {
+            name: paymentData.cardData.name,
+            identification: paymentData.document ? {
+              type: paymentData.document.length <= 11 ? 'CPF' : 'CNPJ',
+              number: paymentData.document
+            } : undefined
+          }
+        };
+      }
     } else if (paymentData.paymentMethod === 'boleto') {
       paymentPayload.payment_method_id = 'bolbradesco';
       paymentPayload.date_of_expiration = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]; // 3 days
