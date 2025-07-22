@@ -28,11 +28,13 @@ export function ThemeProvider({
   storageKey = "vite-ui-theme",
   ...props
 }: ThemeProviderProps) {
-  const [theme, setTheme] = useState<Theme>(
+  const [theme, setThemeState] = useState<Theme>(
     () => (localStorage.getItem(storageKey) as Theme) || defaultTheme
   );
+  const [isLoaded, setIsLoaded] = useState(false);
   const { user } = useAuth();
 
+  // Apply theme to DOM
   useEffect(() => {
     const root = window.document.documentElement;
 
@@ -51,9 +53,9 @@ export function ThemeProvider({
     root.classList.add(theme);
   }, [theme]);
 
+  // Load theme from database only once when user logs in
   useEffect(() => {
-    if (user) {
-      // Load user theme preference from database
+    if (user && !isLoaded) {
       const loadUserTheme = async () => {
         const { data } = await supabase
           .from('user_preferences')
@@ -61,19 +63,23 @@ export function ThemeProvider({
           .eq('user_id', user.id)
           .single();
         
-        if (data?.theme) {
-          setTheme(data.theme as Theme);
+        if (data?.theme && data.theme !== theme) {
+          setThemeState(data.theme as Theme);
+          localStorage.setItem(storageKey, data.theme);
         }
+        setIsLoaded(true);
       };
       loadUserTheme();
+    } else if (!user) {
+      setIsLoaded(false);
     }
-  }, [user]);
+  }, [user, isLoaded, storageKey, theme]);
 
   const value = {
     theme,
-    setTheme: (theme: Theme) => {
-      localStorage.setItem(storageKey, theme);
-      setTheme(theme);
+    setTheme: (newTheme: Theme) => {
+      setThemeState(newTheme);
+      localStorage.setItem(storageKey, newTheme);
       
       // Save to database if user is logged in
       if (user) {
@@ -81,7 +87,7 @@ export function ThemeProvider({
           .from('user_preferences')
           .upsert({ 
             user_id: user.id, 
-            theme: theme 
+            theme: newTheme 
           })
           .then(() => {
             console.log('Theme preference saved');
