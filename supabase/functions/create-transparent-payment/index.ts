@@ -81,7 +81,7 @@ serve(async (req) => {
 
     // Create payment with Mercado Pago Payment API (transparent checkout)
     const paymentPayload: any = {
-      transaction_amount: paymentData.total,
+      transaction_amount: Math.round(paymentData.total * 100) / 100,
       description: product.name,
       external_reference: order.id,
       payer: {

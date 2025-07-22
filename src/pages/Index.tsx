@@ -235,9 +235,18 @@ const Index = () => {
                 <ArrowRight className="w-4 h-4 ml-2" />
               </Button>
             </Link>
-            <Button size="lg" variant="outline" className="border-primary-foreground text-primary-foreground hover:bg-primary-foreground/10">
-              View Documentation
-            </Button>
+            <Link to="/auth">
+              <Button size="lg" variant="outline" className="border-primary-foreground text-primary-foreground hover:bg-primary-foreground/10">
+                Login / Cadastro
+                <ArrowRight className="w-4 h-4 ml-2" />
+              </Button>
+            </Link>
+            <Link to="/products">
+              <Button size="lg" variant="outline" className="border-primary-foreground text-primary-foreground hover:bg-primary-foreground/10">
+                Gerenciar Produtos
+                <ArrowRight className="w-4 h-4 ml-2" />
+              </Button>
+            </Link>
           </div>
         </div>
       </section>

@@ -258,8 +258,21 @@ export default function CheckoutPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
+      {/* Hero Banner */}
+      <div className="relative bg-gradient-to-r from-primary/20 via-primary/10 to-background">
+        <div className="absolute inset-0 bg-grid-pattern opacity-5"></div>
+        <div className="container mx-auto py-12 px-4 text-center relative">
+          <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent mb-4">
+            Checkout Seguro
+          </h1>
+          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+            Finalize sua compra com segurança e praticidade
+          </p>
+        </div>
+      </div>
+
       <div className="container mx-auto py-8 px-4">
-        <div className="max-w-4xl mx-auto">
+        <div className="max-w-6xl mx-auto">
           {/* Trust indicators */}
           <div className="flex items-center justify-center gap-6 mb-8">
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
