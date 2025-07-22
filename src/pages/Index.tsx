@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/hooks/useAuth';
+import { useSystemSettings } from '@/hooks/useSystemSettings';
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { ShoppingCart, CreditCard, Zap, Shield, Star, ArrowRight, CheckCircle, Package, LogIn, Settings, LogOut, BarChart3, Tag } from 'lucide-react';
 
@@ -22,6 +23,7 @@ const Index = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { user, userRole, signOut } = useAuth();
+  const { storeName } = useSystemSettings();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -54,7 +56,7 @@ const Index = () => {
             <div className="flex items-center space-x-2">
               <Package className="h-8 w-8 text-primary" />
               <span className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
-                Sua Loja
+                {storeName}
               </span>
             </div>
             <div className="flex items-center space-x-4">

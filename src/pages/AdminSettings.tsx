@@ -68,6 +68,14 @@ export default function AdminSettings() {
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [systemName, setSystemName] = useState("");
+  const [storeName, setStoreName] = useState("");
+  const [checkoutPrimaryColor, setCheckoutPrimaryColor] = useState("#3b82f6");
+  const [checkoutSecondaryColor, setCheckoutSecondaryColor] = useState("#f1f5f9");
+  const [checkoutAccentColor, setCheckoutAccentColor] = useState("#06b6d4");
+  const [checkoutSuccessColor, setCheckoutSuccessColor] = useState("#16a34a");
+  const [checkoutWarningColor, setCheckoutWarningColor] = useState("#d97706");
+  const [metaPixelId, setMetaPixelId] = useState("");
+  const [supportWhatsapp, setSupportWhatsapp] = useState("+5574974008239");
   
   // Order Bump form states
   const [newBumpTitle, setNewBumpTitle] = useState("");
@@ -202,10 +210,50 @@ export default function AdminSettings() {
 
     setSystemSettings(data || []);
     
-    // Load system name if exists
-    const nameConfig = data?.find(s => s.setting_key === 'SYSTEM_NAME');
-    if (nameConfig) {
-      setSystemName(nameConfig.setting_value || "");
+    // Load all system configurations
+    const systemNameConfig = data?.find(s => s.setting_key === 'SYSTEM_NAME');
+    if (systemNameConfig) {
+      setSystemName(systemNameConfig.setting_value || "");
+    }
+
+    const storeNameConfig = data?.find(s => s.setting_key === 'STORE_NAME');
+    if (storeNameConfig) {
+      setStoreName(storeNameConfig.setting_value || "");
+    }
+
+    const primaryColorConfig = data?.find(s => s.setting_key === 'CHECKOUT_PRIMARY_COLOR');
+    if (primaryColorConfig) {
+      setCheckoutPrimaryColor(primaryColorConfig.setting_value || "#3b82f6");
+    }
+
+    const secondaryColorConfig = data?.find(s => s.setting_key === 'CHECKOUT_SECONDARY_COLOR');
+    if (secondaryColorConfig) {
+      setCheckoutSecondaryColor(secondaryColorConfig.setting_value || "#f1f5f9");
+    }
+
+    const accentColorConfig = data?.find(s => s.setting_key === 'CHECKOUT_ACCENT_COLOR');
+    if (accentColorConfig) {
+      setCheckoutAccentColor(accentColorConfig.setting_value || "#06b6d4");
+    }
+
+    const successColorConfig = data?.find(s => s.setting_key === 'CHECKOUT_SUCCESS_COLOR');
+    if (successColorConfig) {
+      setCheckoutSuccessColor(successColorConfig.setting_value || "#16a34a");
+    }
+
+    const warningColorConfig = data?.find(s => s.setting_key === 'CHECKOUT_WARNING_COLOR');
+    if (warningColorConfig) {
+      setCheckoutWarningColor(warningColorConfig.setting_value || "#d97706");
+    }
+
+    const metaPixelConfig = data?.find(s => s.setting_key === 'META_PIXEL_ID');
+    if (metaPixelConfig) {
+      setMetaPixelId(metaPixelConfig.setting_value || "");
+    }
+
+    const supportConfig = data?.find(s => s.setting_key === 'SUPPORT_WHATSAPP');
+    if (supportConfig) {
+      setSupportWhatsapp(supportConfig.setting_value || "+5574974008239");
     }
   };
 
@@ -323,6 +371,173 @@ export default function AdminSettings() {
         description: "Nome do sistema salvo com sucesso",
       });
       // Recarregar configurações do sistema em tempo real
+      await loadSystemSettings();
+    }
+    
+    setLoading(false);
+  };
+
+  const saveStoreName = async () => {
+    if (!storeName.trim()) {
+      toast({
+        title: "Erro",
+        description: "Nome da loja é obrigatório",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setLoading(true);
+    
+    const { error } = await supabase
+      .from('system_settings')
+      .upsert({
+        setting_key: 'STORE_NAME',
+        setting_value: storeName,
+        setting_description: 'Nome da loja exibido no cabeçalho e logotipo',
+        updated_by: user?.id
+      }, {
+        onConflict: 'setting_key'
+      });
+
+    if (error) {
+      console.error('Erro ao salvar nome da loja:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao salvar nome da loja",
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Sucesso",
+        description: "Nome da loja salvo com sucesso",
+      });
+      await loadSystemSettings();
+    }
+    
+    setLoading(false);
+  };
+
+  const saveCheckoutColors = async () => {
+    setLoading(true);
+    
+    try {
+      const colorSettings = [
+        { key: 'CHECKOUT_PRIMARY_COLOR', value: checkoutPrimaryColor, description: 'Cor primária do checkout' },
+        { key: 'CHECKOUT_SECONDARY_COLOR', value: checkoutSecondaryColor, description: 'Cor secundária do checkout' },
+        { key: 'CHECKOUT_ACCENT_COLOR', value: checkoutAccentColor, description: 'Cor de destaque do checkout' },
+        { key: 'CHECKOUT_SUCCESS_COLOR', value: checkoutSuccessColor, description: 'Cor de sucesso do checkout' },
+        { key: 'CHECKOUT_WARNING_COLOR', value: checkoutWarningColor, description: 'Cor de aviso do checkout' }
+      ];
+
+      for (const setting of colorSettings) {
+        const { error } = await supabase
+          .from('system_settings')
+          .upsert({
+            setting_key: setting.key,
+            setting_value: setting.value,
+            setting_description: setting.description,
+            updated_by: user?.id
+          }, {
+            onConflict: 'setting_key'
+          });
+
+        if (error) {
+          console.error(`Erro ao salvar ${setting.key}:`, error);
+          toast({
+            title: "Erro",
+            description: `Erro ao salvar ${setting.description}`,
+            variant: "destructive",
+          });
+          setLoading(false);
+          return;
+        }
+      }
+
+      toast({
+        title: "Sucesso",
+        description: "Cores do checkout salvas com sucesso",
+      });
+      await loadSystemSettings();
+    } catch (error) {
+      console.error('Erro ao salvar cores do checkout:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao salvar cores do checkout",
+        variant: "destructive",
+      });
+    }
+    
+    setLoading(false);
+  };
+
+  const saveMetaPixelId = async () => {
+    setLoading(true);
+    
+    const { error } = await supabase
+      .from('system_settings')
+      .upsert({
+        setting_key: 'META_PIXEL_ID',
+        setting_value: metaPixelId,
+        setting_description: 'ID do Pixel do Meta/Facebook para rastreamento',
+        updated_by: user?.id
+      }, {
+        onConflict: 'setting_key'
+      });
+
+    if (error) {
+      console.error('Erro ao salvar Meta Pixel ID:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao salvar Meta Pixel ID",
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Sucesso",
+        description: "Meta Pixel ID salvo com sucesso",
+      });
+      await loadSystemSettings();
+    }
+    
+    setLoading(false);
+  };
+
+  const saveSupportWhatsapp = async () => {
+    if (!supportWhatsapp.trim()) {
+      toast({
+        title: "Erro",
+        description: "Número do WhatsApp é obrigatório",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setLoading(true);
+    
+    const { error } = await supabase
+      .from('system_settings')
+      .upsert({
+        setting_key: 'SUPPORT_WHATSAPP',
+        setting_value: supportWhatsapp,
+        setting_description: 'Número do WhatsApp para suporte aos clientes',
+        updated_by: user?.id
+      }, {
+        onConflict: 'setting_key'
+      });
+
+    if (error) {
+      console.error('Erro ao salvar WhatsApp de suporte:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao salvar WhatsApp de suporte",
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Sucesso",
+        description: "WhatsApp de suporte salvo com sucesso",
+      });
       await loadSystemSettings();
     }
     
@@ -576,14 +791,26 @@ export default function AdminSettings() {
         </div>
 
         <Tabs defaultValue="system" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-6">
+          <TabsList className="grid w-full grid-cols-8">
             <TabsTrigger value="system" className="flex items-center gap-2">
               <Building className="h-4 w-4" />
               Sistema
             </TabsTrigger>
+            <TabsTrigger value="store" className="flex items-center gap-2">
+              <Building className="h-4 w-4" />
+              Loja
+            </TabsTrigger>
+            <TabsTrigger value="checkout" className="flex items-center gap-2">
+              <CreditCard className="h-4 w-4" />
+              Checkout
+            </TabsTrigger>
             <TabsTrigger value="mercadopago" className="flex items-center gap-2">
               <CreditCard className="h-4 w-4" />
               Mercado Pago
+            </TabsTrigger>
+            <TabsTrigger value="tracking" className="flex items-center gap-2">
+              <Settings className="h-4 w-4" />
+              Rastreamento
             </TabsTrigger>
             <TabsTrigger value="order-bumps" className="flex items-center gap-2">
               <Package className="h-4 w-4" />
@@ -631,6 +858,159 @@ export default function AdminSettings() {
                 >
                   {loading ? "Salvando..." : "Salvar Nome do Sistema"}
                 </Button>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="store">
+            <Card>
+              <CardHeader>
+                <CardTitle>Configurações da Loja</CardTitle>
+                <CardDescription>
+                  Configure informações da loja exibidas publicamente
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="store-name">Nome da Loja</Label>
+                  <Input
+                    id="store-name"
+                    placeholder="Ex: Minha Loja"
+                    value={storeName}
+                    onChange={(e) => setStoreName(e.target.value)}
+                  />
+                  <p className="text-sm text-muted-foreground">
+                    Nome exibido no cabeçalho da página inicial
+                  </p>
+                </div>
+                <Button 
+                  onClick={saveStoreName}
+                  disabled={loading}
+                  className="w-full"
+                >
+                  {loading ? "Salvando..." : "Salvar Nome da Loja"}
+                </Button>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="checkout">
+            <Card>
+              <CardHeader>
+                <CardTitle>Personalização do Checkout</CardTitle>
+                <CardDescription>
+                  Configure as cores do checkout transparente
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="primary-color">Cor Primária</Label>
+                    <Input
+                      id="primary-color"
+                      type="color"
+                      value={checkoutPrimaryColor}
+                      onChange={(e) => setCheckoutPrimaryColor(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="secondary-color">Cor Secundária</Label>
+                    <Input
+                      id="secondary-color"
+                      type="color"
+                      value={checkoutSecondaryColor}
+                      onChange={(e) => setCheckoutSecondaryColor(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="accent-color">Cor de Destaque</Label>
+                    <Input
+                      id="accent-color"
+                      type="color"
+                      value={checkoutAccentColor}
+                      onChange={(e) => setCheckoutAccentColor(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="success-color">Cor de Sucesso</Label>
+                    <Input
+                      id="success-color"
+                      type="color"
+                      value={checkoutSuccessColor}
+                      onChange={(e) => setCheckoutSuccessColor(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="warning-color">Cor de Aviso</Label>
+                    <Input
+                      id="warning-color"
+                      type="color"
+                      value={checkoutWarningColor}
+                      onChange={(e) => setCheckoutWarningColor(e.target.value)}
+                    />
+                  </div>
+                </div>
+                <Button 
+                  onClick={saveCheckoutColors}
+                  disabled={loading}
+                  className="w-full"
+                >
+                  {loading ? "Salvando..." : "Salvar Cores do Checkout"}
+                </Button>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="tracking">
+            <Card>
+              <CardHeader>
+                <CardTitle>Configurações de Rastreamento</CardTitle>
+                <CardDescription>
+                  Configure rastreamento e suporte ao cliente
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="meta-pixel">Meta Pixel ID</Label>
+                  <Input
+                    id="meta-pixel"
+                    placeholder="Digite o ID do Meta Pixel"
+                    value={metaPixelId}
+                    onChange={(e) => setMetaPixelId(e.target.value)}
+                  />
+                  <p className="text-sm text-muted-foreground">
+                    ID do Pixel do Facebook/Meta para rastreamento de conversões
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="support-whatsapp">WhatsApp de Suporte</Label>
+                  <Input
+                    id="support-whatsapp"
+                    placeholder="+5511999999999"
+                    value={supportWhatsapp}
+                    onChange={(e) => setSupportWhatsapp(e.target.value)}
+                  />
+                  <p className="text-sm text-muted-foreground">
+                    Número do WhatsApp para suporte aos clientes
+                  </p>
+                </div>
+                <div className="flex space-x-2">
+                  <Button 
+                    onClick={saveMetaPixelId}
+                    disabled={loading}
+                    className="flex-1"
+                  >
+                    {loading ? "Salvando..." : "Salvar Meta Pixel"}
+                  </Button>
+                  <Button 
+                    onClick={saveSupportWhatsapp}
+                    disabled={loading}
+                    variant="outline"
+                    className="flex-1"
+                  >
+                    {loading ? "Salvando..." : "Salvar WhatsApp"}
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>

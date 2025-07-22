@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
-import { CheckCircle, Download, ArrowRight, Mail, Calendar } from 'lucide-react';
+import { CheckCircle, Download, ArrowRight, Mail, Calendar, MessageCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
+import { useSystemSettings } from '@/hooks/useSystemSettings';
 
 interface Order {
   id: string;
@@ -20,6 +21,7 @@ export default function PaymentSuccess() {
   const [searchParams] = useSearchParams();
   const [order, setOrder] = useState<Order | null>(null);
   const [redirectCountdown, setRedirectCountdown] = useState(10);
+  const { supportWhatsapp } = useSystemSettings();
   
   const orderId = searchParams.get('order');
   const paymentId = searchParams.get('payment_id');
@@ -157,11 +159,16 @@ export default function PaymentSuccess() {
           <div className="flex gap-2 justify-center">
             <Link to="/">
               <Button variant="outline" size="sm">
-                Back to Home
+                Voltar ao Início
               </Button>
             </Link>
-            <Button variant="outline" size="sm">
-              Contact Support
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => window.open(`https://wa.me/${supportWhatsapp.replace(/[^0-9]/g, '')}`, '_blank')}
+            >
+              <MessageCircle className="w-4 h-4 mr-2" />
+              Suporte
             </Button>
           </div>
         </div>

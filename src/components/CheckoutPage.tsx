@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import { useSystemSettings } from '@/hooks/useSystemSettings';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -61,6 +62,7 @@ export default function CheckoutPage() {
   const [currentStep, setCurrentStep] = useState<'form' | 'payment'>('form');
   const [bannerImage, setBannerImage] = useState<string | null>(null);
   const { toast } = useToast();
+  const { metaPixelId, checkoutColors } = useSystemSettings();
 
   // Real-time payment status monitoring
   useEffect(() => {
@@ -183,7 +185,30 @@ export default function CheckoutPage() {
       loadProduct(productId);
       loadOrderBumps(productId);
     }
-  }, [productId]);
+
+    // Load Meta Pixel if configured
+    if (metaPixelId && typeof window !== 'undefined') {
+      const script = document.createElement('script');
+      script.innerHTML = `
+        !function(f,b,e,v,n,t,s)
+        {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+        n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+        if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+        n.queue=[];t=b.createElement(e);t.async=!0;
+        t.src=v;s=b.getElementsByTagName(e)[0];
+        s.parentNode.insertBefore(t,s)}(window, document,'script',
+        'https://connect.facebook.net/en_US/fbevents.js');
+        fbq('init', '${metaPixelId}');
+        fbq('track', 'PageView');
+        fbq('track', 'InitiateCheckout');
+      `;
+      document.head.appendChild(script);
+
+      const noscript = document.createElement('noscript');
+      noscript.innerHTML = `<img height="1" width="1" style="display:none" src="https://www.facebook.com/tr?id=${metaPixelId}&ev=PageView&noscript=1" />`;
+      document.head.appendChild(noscript);
+    }
+  }, [productId, metaPixelId]);
 
   useEffect(() => {
     calculateTotals();
