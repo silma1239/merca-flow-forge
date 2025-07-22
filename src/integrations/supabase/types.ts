@@ -80,6 +80,48 @@ export type Database = {
         }
         Relationships: []
       }
+      order_bump_settings: {
+        Row: {
+          bump_product_id: string
+          created_at: string
+          created_by: string | null
+          delivery_link: string | null
+          description: string | null
+          discount_percentage: number | null
+          id: string
+          is_active: boolean | null
+          product_id: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          bump_product_id: string
+          created_at?: string
+          created_by?: string | null
+          delivery_link?: string | null
+          description?: string | null
+          discount_percentage?: number | null
+          id?: string
+          is_active?: boolean | null
+          product_id: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          bump_product_id?: string
+          created_at?: string
+          created_by?: string | null
+          delivery_link?: string | null
+          description?: string | null
+          discount_percentage?: number | null
+          id?: string
+          is_active?: boolean | null
+          product_id?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       order_bumps: {
         Row: {
           bump_product_id: string
@@ -364,6 +406,36 @@ export type Database = {
           id?: string
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      system_settings: {
+        Row: {
+          created_at: string
+          id: string
+          setting_description: string | null
+          setting_key: string
+          setting_value: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          setting_description?: string | null
+          setting_key: string
+          setting_value?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          setting_description?: string | null
+          setting_key?: string
+          setting_value?: string | null
+          updated_at?: string
+          updated_by?: string | null
         }
         Relationships: []
       }
